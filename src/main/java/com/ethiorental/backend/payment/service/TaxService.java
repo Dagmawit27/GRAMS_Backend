@@ -124,6 +124,7 @@ public class TaxService {
 
     /**
      * Builds comprehensive annual rental tax summary for a landlord.
+     * Tax is calculated based on actual months with rent payments only (pro-rated).
      */
     @Transactional(readOnly = true)
     public TaxSummaryResponse getLandlordTaxSummary(String landlordEmail) {
@@ -142,17 +143,34 @@ public class TaxService {
         List<Payment> payments = paymentRepository.findByLandlordEmail(landlordEmail);
         Map<String, BigDecimal> agreementPaidMap = new HashMap<>();
         Map<String, Integer> agreementPaidMonthsMap = new HashMap<>();
+        Map<String, List<LocalDate>> agreementPaymentMonthsMap = new HashMap<>();
 
         for (Payment p : payments) {
             if (p.getStatus() == PaymentStatus.COMPLETED && p.getAmount() != null) {
                 String key = p.getAgreementNumber() != null ? p.getAgreementNumber() : p.getRequestCode();
                 if (key != null) {
                     agreementPaidMap.merge(key, p.getAmount(), BigDecimal::add);
-                    int m = 1;
-                    if (p.getAgreement() != null && p.getAgreement().getAdvancePaymentMonths() != null && p.getAgreement().getAdvancePaymentMonths() > 0) {
-                        m = p.getAgreement().getAdvancePaymentMonths();
+                    
+                    // Track actual payment months based on payment date
+                    int monthsCounted = 0;
+                    if (p.getPaymentDate() != null) {
+                        LocalDate paymentDate = p.getPaymentDate().toLocalDate();
+                        agreementPaymentMonthsMap.computeIfAbsent(key, k -> new ArrayList<>()).add(paymentDate);
+                        
+                        // Calculate months covered by this payment
+                        int m = 1;
+                        if (p.getAgreement() != null && p.getAgreement().getAdvancePaymentMonths() != null && p.getAgreement().getAdvancePaymentMonths() > 0) {
+                            m = p.getAgreement().getAdvancePaymentMonths();
+                        }
+                        monthsCounted = m;
+                    } else {
+                        int m = 1;
+                        if (p.getAgreement() != null && p.getAgreement().getAdvancePaymentMonths() != null && p.getAgreement().getAdvancePaymentMonths() > 0) {
+                            m = p.getAgreement().getAdvancePaymentMonths();
+                        }
+                        monthsCounted = m;
                     }
-                    agreementPaidMonthsMap.merge(key, m, Integer::sum);
+                    agreementPaidMonthsMap.merge(key, monthsCounted, Integer::sum);
                 }
             }
         }
@@ -160,6 +178,7 @@ public class TaxService {
         // 3. Build agreement-by-agreement breakdown (Strict cash-basis: only completed payments count)
         List<AgreementTaxBreakdownDto> agreementDtos = new ArrayList<>();
         BigDecimal totalGross = BigDecimal.ZERO;
+        int totalActualMonthsPaid = 0;
 
         for (Agreement agr : agreements) {
             String agrCode = agr.getAgreementNumber() != null ? agr.getAgreementNumber() : agr.getRequestCode();
@@ -167,6 +186,7 @@ public class TaxService {
 
             BigDecimal paid = agreementPaidMap.getOrDefault(agrCode, BigDecimal.ZERO);
             int months = agreementPaidMonthsMap.getOrDefault(agrCode, 0);
+            totalActualMonthsPaid += months;
 
             // Strict cash-basis: only count actually completed payments
             BigDecimal gross = paid;
@@ -187,17 +207,20 @@ public class TaxService {
                     .build());
         }
 
-        // 4. Calculate total Schedule B annual tax
+        // 4. Calculate total Schedule B annual tax based on actual paid months
+        // Project annual income based on actual months paid (pro-rated)
         BigDecimal totalTax = BigDecimal.ZERO;
-        if (totalGross.compareTo(BigDecimal.ZERO) > 0 && !agreementDtos.isEmpty()) {
-            int countedMonths = Math.max(1, agreementDtos.get(0).getMonthsCounted());
-            BigDecimal projectedAnnual = totalGross.multiply(BigDecimal.valueOf(12))
-                    .divide(BigDecimal.valueOf(countedMonths), 2, RoundingMode.HALF_UP);
-            totalTax = calculateScheduleBAnnualTax(totalGross);
-            if (totalTax.compareTo(BigDecimal.ZERO) == 0 && totalGross.compareTo(BigDecimal.valueOf(24000)) > 0) {
-                totalTax = calculateScheduleBAnnualTax(projectedAnnual)
-                        .multiply(totalGross).divide(projectedAnnual, 2, RoundingMode.HALF_UP);
-            }
+        if (totalGross.compareTo(BigDecimal.ZERO) > 0 && totalActualMonthsPaid > 0) {
+            // Project annual income: (totalGross / actualMonthsPaid) * 12
+            BigDecimal projectedAnnualIncome = totalGross.multiply(BigDecimal.valueOf(12))
+                    .divide(BigDecimal.valueOf(totalActualMonthsPaid), 2, RoundingMode.HALF_UP);
+            
+            // Calculate tax on projected annual income
+            totalTax = calculateScheduleBAnnualTax(projectedAnnualIncome);
+            
+            // Pro-rate tax to actual months: (totalTax / 12) * actualMonthsPaid
+            totalTax = totalTax.multiply(BigDecimal.valueOf(totalActualMonthsPaid))
+                    .divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
         }
 
         // Proportional tax allocation per agreement
@@ -214,8 +237,21 @@ public class TaxService {
                 ? totalTax.multiply(BigDecimal.valueOf(100)).divide(totalGross, 1, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
-        // 5. Build month-by-month accumulation list
-        List<MonthlyTaxAccrualDto> monthlyAccruals = buildMonthlyAccruals(totalGross, totalTax);
+        // Calculate net income after tax
+        BigDecimal netIncomeAfterTax = totalGross.subtract(totalTax);
+
+        // Get tax bracket percentage for display
+        int taxBracketPercentage = 0;
+        if (totalGross.compareTo(BigDecimal.ZERO) > 0 && totalActualMonthsPaid > 0) {
+            BigDecimal projectedAnnual = totalGross.multiply(BigDecimal.valueOf(12))
+                    .divide(BigDecimal.valueOf(totalActualMonthsPaid), 2, RoundingMode.HALF_UP);
+            taxBracketPercentage = getScheduleBBracketRate(projectedAnnual);
+        }
+
+        // 5. Build month-by-month accumulation list based on actual payment periods
+        List<MonthlyTaxAccrualDto> monthlyAccruals = buildMonthlyAccrualsFromPayments(
+                totalGross, totalTax, totalActualMonthsPaid, agreementPaymentMonthsMap, agreementPaidMap
+        );
 
         // 6. Check cache for completed settlement
         TaxSettlementResponse settled = SETTLEMENT_CACHE.get(landlordEmail);
@@ -233,6 +269,9 @@ public class TaxService {
                 .totalGrossRentalIncome(totalGross)
                 .totalEstimatedAnnualTax(totalTax)
                 .effectiveTaxRate(effectiveRate)
+                .netIncomeAfterTax(netIncomeAfterTax)
+                .taxBracketPercentage(taxBracketPercentage)
+                .totalMonthsPaid(totalActualMonthsPaid)
                 .filingStatus(isSettled ? "SETTLED_CLEARED" : (isSummer ? "SUMMER_WINDOW_OPEN" : "ACCRUING_MONTHLY"))
                 .summerFilingDeadline("Nehase 30, 2018 E.C. (September 5, 2026)")
                 .isSummerWindowOpen(isSummer || true) // Available for interactive settlement
@@ -245,9 +284,16 @@ public class TaxService {
     }
 
     /**
-     * Builds month-by-month accruals across the 12 Ethiopian months.
+     * Builds month-by-month accruals based on actual payment periods.
+     * Only months with actual rent payments show income and tax.
      */
-    private List<MonthlyTaxAccrualDto> buildMonthlyAccruals(BigDecimal totalGross, BigDecimal totalTax) {
+    private List<MonthlyTaxAccrualDto> buildMonthlyAccrualsFromPayments(
+            BigDecimal totalGross, 
+            BigDecimal totalTax, 
+            int totalActualMonthsPaid,
+            Map<String, List<LocalDate>> agreementPaymentMonthsMap,
+            Map<String, BigDecimal> agreementPaidMap
+    ) {
         String[][] months = {
                 {"Meskerem", "September / October 2025"},
                 {"Tikimt", "October / November 2025"},
@@ -263,27 +309,75 @@ public class TaxService {
                 {"Nehase", "August / September 2026 (Summer Deadline)"}
         };
 
-        boolean hasData = totalGross != null && totalGross.compareTo(BigDecimal.ZERO) > 0;
-        BigDecimal monthlyIncomeEst = hasData
-                ? totalGross.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP)
+        // Calculate average income and tax per paid month
+        boolean hasData = totalGross != null && totalGross.compareTo(BigDecimal.ZERO) > 0 && totalActualMonthsPaid > 0;
+        BigDecimal avgIncomePerPaidMonth = hasData
+                ? totalGross.divide(BigDecimal.valueOf(totalActualMonthsPaid), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
-        BigDecimal monthlyTaxEst = hasData
-                ? totalTax.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP)
+        BigDecimal avgTaxPerPaidMonth = hasData
+                ? totalTax.divide(BigDecimal.valueOf(totalActualMonthsPaid), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
+
+        // Track which months have payments based on payment dates
+        Set<Integer> monthsWithPayments = new HashSet<>();
+        for (List<LocalDate> paymentDates : agreementPaymentMonthsMap.values()) {
+            for (LocalDate date : paymentDates) {
+                int monthIndex = getEthiopianMonthIndex(date);
+                if (monthIndex >= 0 && monthIndex < 12) {
+                    monthsWithPayments.add(monthIndex);
+                }
+            }
+        }
 
         List<MonthlyTaxAccrualDto> list = new ArrayList<>();
         for (int i = 0; i < months.length; i++) {
             boolean isSummer = (i >= 10);
+            boolean hasPaymentInMonth = monthsWithPayments.contains(i);
+            
+            // Only show income/tax for months with actual payments
+            BigDecimal monthIncome = hasPaymentInMonth ? avgIncomePerPaidMonth : BigDecimal.ZERO;
+            BigDecimal monthTax = hasPaymentInMonth ? avgTaxPerPaidMonth : BigDecimal.ZERO;
+            
             list.add(MonthlyTaxAccrualDto.builder()
                     .ethiopianMonth(months[i][0])
                     .gregorianMonth(months[i][1])
-                    .rentalIncome(monthlyIncomeEst)
-                    .accruedTax(monthlyTaxEst)
+                    .rentalIncome(monthIncome)
+                    .accruedTax(monthTax)
                     .isSummerSettlementMonth(isSummer)
                     .isSettled(false)
                     .build());
         }
         return list;
+    }
+
+    /**
+     * Maps Gregorian dates to Ethiopian month index (0-11).
+     * Simplified mapping for EFY 2018 (2025/2026 G.C.)
+     */
+    private int getEthiopianMonthIndex(LocalDate gregorianDate) {
+        int month = gregorianDate.getMonthValue();
+        int year = gregorianDate.getYear();
+        
+        // EFY 2018 starts September 2025 (Meskerem)
+        if (year == 2025) {
+            if (month >= 9 && month <= 10) return 0;  // Meskerem
+            if (month >= 10 && month <= 11) return 1;  // Tikimt
+            if (month >= 11 && month <= 12) return 2;  // Hidar
+            if (month == 12) return 3;  // Tahsas (partial)
+        } else if (year == 2026) {
+            if (month == 1) return 3;  // Tahsas (partial) / Tir (partial)
+            if (month >= 1 && month <= 2) return 4;  // Tir
+            if (month >= 2 && month <= 3) return 5;  // Yakatit
+            if (month >= 3 && month <= 4) return 6;  // Megabit
+            if (month >= 4 && month <= 5) return 7;  // Miazia
+            if (month >= 5 && month <= 6) return 8;  // Ginbot
+            if (month >= 6 && month <= 7) return 9;  // Sene
+            if (month >= 7 && month <= 8) return 10; // Hamle
+            if (month >= 8 && month <= 9) return 11; // Nehase
+        }
+        
+        // Default to current month if mapping fails
+        return -1;
     }
 
     /**
