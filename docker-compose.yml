@@ -1,0 +1,106 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: rental-postgres
+    restart: always
+
+    environment:
+      POSTGRES_DB: rental_db
+      POSTGRES_USER: rental_user
+      POSTGRES_PASSWORD: rental_password
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    networks:
+      - rental-network
+
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: rental-pgadmin
+    restart: always
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@rental.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+
+    ports:
+      - "5050:80"
+
+    depends_on:
+      - postgres
+
+    networks:
+      - rental-network
+
+
+
+  minio:
+    image: minio/minio
+    container_name: rental-minio
+    restart: always
+
+    command: server /data --console-address ":9001"
+
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password
+
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+    volumes:
+      - minio_data:/data
+
+    networks:
+      - rental-network
+
+
+
+  redis:
+    image: redis:7
+    container_name: rental-redis
+    restart: always
+
+    ports:
+      - "6379:6379"
+
+    networks:
+      - rental-network
+
+
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: rental-mailpit
+
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+    networks:
+      - rental-network
+
+
+
+networks:
+
+  rental-network:
+    driver: bridge
+
+
+
+volumes:
+
+  postgres_data:
+
+  minio_data:

@@ -1,1 +1,15 @@
 .vscode/
+
+.env
+
+docker/*/data
+
+postgres_data
+
+minio_data
+
+node_modules
+
+target
+
+.idea
