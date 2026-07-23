@@ -1,0 +1,1 @@
+# API contracts`n`n`openapi.json` is generated from the Spring Boot controllers and DTOs. GitHub Actions verifies that this source-of-truth contract and generated web/mobile clients are committed together.`n

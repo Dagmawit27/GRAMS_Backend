@@ -1,15 +1,25 @@
-.vscode/
-
+# Environment
 .env
 
-docker/*/data
+# Maven
+backend/target/
 
-postgres_data
+# Node
+frontend/node_modules/
+frontend/.next/
 
-minio_data
+# IDE
+.idea/
+.vscode/
 
-node_modules
+# OS
+.DS_Store
+Thumbs.db
 
-target
+# Logs
+*.log
 
-.idea
+# Docker volumes (if using bind mounts later)
+docker/**/data/
+
+backend/.m2/

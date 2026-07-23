@@ -1,0 +1,1 @@
+/** Rental payments and external payment-provider adapters. */`npackage et.gov.endrms.payment;`n

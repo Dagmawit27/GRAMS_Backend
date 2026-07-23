@@ -1,0 +1,1 @@
+# ENDRMS Mobile`n`nFlutter application identifier: `et.gov.endrms.mobile`.`n`nThe local Flutter CLI timed out before it could generate native runners. When the SDK is responsive, run `flutter create .` from this directory, then `flutter pub get`.`n

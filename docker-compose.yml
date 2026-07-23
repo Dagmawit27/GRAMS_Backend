@@ -1,106 +1,122 @@
 version: "3.9"
 
+name: rental-platform
+
 services:
 
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: rental-postgres
-    restart: always
+    restart: unless-stopped
 
     environment:
-      POSTGRES_DB: rental_db
-      POSTGRES_USER: rental_user
-      POSTGRES_PASSWORD: rental_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
     networks:
       - rental-network
-
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
     container_name: rental-pgadmin
-    restart: always
+    restart: unless-stopped
 
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@rental.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
 
     ports:
-      - "5050:80"
+      - "${PGADMIN_PORT}:80"
 
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
 
     networks:
       - rental-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: rental-redis
+    restart: unless-stopped
 
+    ports:
+      - "${REDIS_PORT}:6379"
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - rental-network
 
   minio:
-    image: minio/minio
+    image: minio/minio:latest
     container_name: rental-minio
-    restart: always
+    restart: unless-stopped
 
     command: server /data --console-address ":9001"
 
     environment:
-      MINIO_ROOT_USER: minio_admin
-      MINIO_ROOT_PASSWORD: minio_password
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
 
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT}:9000"
+      - "${MINIO_CONSOLE_PORT}:9001"
 
     volumes:
       - minio_data:/data
 
-    networks:
-      - rental-network
-
-
-
-  redis:
-    image: redis:7
-    container_name: rental-redis
-    restart: always
-
-    ports:
-      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
     networks:
       - rental-network
-
-
 
   mailpit:
-    image: axllent/mailpit
+    image: axllent/mailpit:latest
     container_name: rental-mailpit
+    restart: unless-stopped
 
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      - "${MAILPIT_SMTP_PORT}:1025"
+      - "${MAILPIT_UI_PORT}:8025"
 
     networks:
       - rental-network
 
-
+volumes:
+  postgres_data:
+  pgadmin_data:
+  redis_data:
+  minio_data:
 
 networks:
-
   rental-network:
     driver: bridge
-
-
-
-volumes:
-
-  postgres_data:
-
-  minio_data:
