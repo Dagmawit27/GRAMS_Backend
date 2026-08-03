@@ -3,6 +3,7 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+GRAMS_IAM_Postman_Collection.json
 
 ### STS ###
 .apt_generated
