@@ -2,19 +2,27 @@ package com.ethiorental.backend.IAM.entity;
 
 import jakarta.persistence.*;
 
-import org.antlr.v4.runtime.misc.NotNull;
+import jakarta.validation.constraints.NotNull;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.processing.Pattern;
+import jakarta.validation.constraints.Pattern;
+import lombok.*;
+
 import org.hibernate.type.SqlTypes;
 import jakarta.validation.constraints.NotBlank;
-
-
-import com.ethiorental.backend.IAM.enums.Gender;
-
+import jakarta.validation.constraints.Email;
+import com.ethiorental.backend.IAM.enums.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
+
+
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
+@Table(name = "users")
 public class User {
 
     @Id
@@ -23,18 +31,22 @@ public class User {
     private UUID id;
 
     @NotNull
-    @Column(nullable = false, unique = true)
-    private Long fayda_id;
+    @Column(name = "fayda_id", nullable = false, unique = true)
+    private Long faydaId;
 
+    @NotBlank
     @Column(nullable = false)
     private String firstName;
 
+    @NotBlank
     @Column(nullable = false)
-    private String middelName;
+    private String middleName;
 
+    @NotBlank
     @Column(nullable = false)
     private String lastName;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Gender gender;
@@ -52,4 +64,14 @@ public class User {
     @Email(message = "Invalid email address")
     @Column(nullable = false, unique = true)
     private String email;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
 }
