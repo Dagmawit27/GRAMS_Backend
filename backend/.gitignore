@@ -5,6 +5,9 @@ target/
 !**/src/test/**/target/
 GRAMS_IAM_Postman_Collection.json
 
+.env
+
+
 ### STS ###
 .apt_generated
 .classpath
