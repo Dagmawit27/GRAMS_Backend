@@ -11,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.ethiorental.backend.IAM.dto.*;
-import com.ethiorental.backend.IAM.service.AuthService;
 
 import java.util.Map;
 
@@ -31,7 +29,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
+        AuthResponse response = authService.loginCitizen(request);
         return ResponseEntity.ok(response);
     }
 

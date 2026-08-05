@@ -8,8 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import com.ethiorental.backend.IAM.dto.UserSummaryDto;
-import com.ethiorental.backend.IAM.service.UserService;
 
 import java.util.UUID;
 
