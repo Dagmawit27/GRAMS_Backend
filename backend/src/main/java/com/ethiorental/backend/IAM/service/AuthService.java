@@ -6,7 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ethiorental.backend.IAM.adapter.FaydaAdapterService;
-import com.ethiorental.backend.IAM.dto.*;
+import com.ethiorental.backend.IAM.dto.request.LoginRequest;
+import com.ethiorental.backend.IAM.dto.request.RefreshTokenRequest;
+import com.ethiorental.backend.IAM.dto.request.RegisterCitizenRequest;
+import com.ethiorental.backend.IAM.dto.request.RegisterEmployeeRequest;
+import com.ethiorental.backend.IAM.dto.response.AuthResponse;
+import com.ethiorental.backend.IAM.dto.response.FaydaCitizenResponseDto;
+import com.ethiorental.backend.IAM.dto.response.UserSummaryDto;
 import com.ethiorental.backend.IAM.entity.*;
 import com.ethiorental.backend.IAM.enums.Status;
 import com.ethiorental.backend.IAM.repository.*;
@@ -67,17 +73,18 @@ public class AuthService {
 
         user = userRepository.save(user);
 
-        // 3. Assign base CITIZEN role and preference role
-        assignRoleToUser(user, "CITIZEN");
+        // 3. Assign LANDLORD and/or TENANT roles (default BOTH if no role is entered)
+        String pref = (request.getRolePreference() != null && !request.getRolePreference().isBlank())
+                ? request.getRolePreference().trim().toUpperCase()
+                : "BOTH";
 
-        if (request.getRolePreference() != null) {
-            String pref = request.getRolePreference().toUpperCase();
-            if ("LANDLORD".equals(pref) || "BOTH".equals(pref)) {
-                assignRoleToUser(user, "LANDLORD");
-            }
-            if ("TENANT".equals(pref) || "BOTH".equals(pref)) {
-                assignRoleToUser(user, "TENANT");
-            }
+        if ("LANDLORD".equals(pref)) {
+            assignRoleToUser(user, "LANDLORD");
+        } else if ("TENANT".equals(pref)) {
+            assignRoleToUser(user, "TENANT");
+        } else {
+            assignRoleToUser(user, "LANDLORD");
+            assignRoleToUser(user, "TENANT");
         }
 
         return createAuthResponse(user);
@@ -117,7 +124,8 @@ public class AuthService {
             user.setStatus(Status.ACTIVE);
             user = userRepository.save(user);
 
-            assignRoleToUser(user, "CITIZEN");
+            assignRoleToUser(user, "LANDLORD");
+            assignRoleToUser(user, "TENANT");
         }
 
         // Create GovernmentEmployee entity
@@ -257,10 +265,13 @@ public class AuthService {
                 .email(user.getEmail())
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
+                .userType("CITIZEN")
+                .governmentEmployee(false)
                 .roles(roles);
 
         governmentEmployeeRepository.findByUser(user).ifPresent(emp -> {
             builder.governmentEmployee(true)
+                    .userType("GOVERNMENT_EMPLOYEE")
                     .employeeNumber(emp.getEmployeeNumber())
                     .department(emp.getDepartment())
                     .woredaCode(emp.getWoredaCode())

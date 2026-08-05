@@ -1,4 +1,4 @@
-package com.ethiorental.backend.IAM.dto;
+package com.ethiorental.backend.IAM.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

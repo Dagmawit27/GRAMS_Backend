@@ -1,5 +1,7 @@
 package com.ethiorental.backend.IAM.controller;
 
+import com.ethiorental.backend.IAM.dto.response.UserSummaryDto;
+import com.ethiorental.backend.IAM.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

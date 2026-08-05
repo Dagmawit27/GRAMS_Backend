@@ -1,6 +1,6 @@
 package com.ethiorental.backend.IAM.adapter;
 
-import com.ethiorental.backend.IAM.dto.FaydaCitizenResponseDto;
+import com.ethiorental.backend.IAM.dto.response.FaydaCitizenResponseDto;
 
 public interface FaydaAdapter {
     /**

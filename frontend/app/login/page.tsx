@@ -5,18 +5,17 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { loginUser } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ username: "", password: "" });
+  const [form, setForm] = useState({ loginIdentifier: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.username.trim()) e.username = "Username is required.";
+    if (!form.loginIdentifier.trim()) e.loginIdentifier = "Email, Phone, or Fayda ID is required.";
     if (!form.password) e.password = "Password is required.";
     return e;
   } 
@@ -34,10 +33,33 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const data = await loginUser({ username: form.username, password: form.password });
-      localStorage.setItem("jwt", data.token);
-      localStorage.setItem("username", data.username);
-      router.push("/");
+      const res = await fetch("http://localhost:8080/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Invalid credentials or unauthorized.");
+      }
+
+      const data = await res.json();
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      const roles: string[] = data.user?.roles || [];
+      const userType: string = data.user?.userType || "";
+
+      // Route to URL based on user role and domain
+      if (roles.includes("SYSTEM_ADMINISTRATOR") || roles.includes("ROLE_SYSTEM_ADMINISTRATOR")) {
+        router.push("/admin/dashboard");
+      } else if (userType === "GOVERNMENT_EMPLOYEE" || data.user?.governmentEmployee) {
+        router.push("/officer/dashboard");
+      } else {
+        router.push("/citizen/dashboard");
+      }
     } catch (err: unknown) {
       setServerError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
@@ -53,8 +75,8 @@ export default function LoginPage() {
         <div className="bg-white rounded-lg shadow-md w-full max-w-md">
           {/* Header */}
           <div className="border-b border-gray-100 px-8 py-6">
-            <h1 className="text-2xl font-bold text-gray-800">Welcome Back</h1>
-            <p className="text-sm text-gray-500 mt-1">Sign in to your Rental System account.</p>
+            <h1 className="text-2xl font-bold text-gray-800">GRAMS Portal Sign In</h1>
+            <p className="text-sm text-gray-500 mt-1">Sign in with your Email, Phone Number, or Fayda ID.</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate className="px-8 py-8 space-y-5">
@@ -64,22 +86,22 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Username */}
+            {/* Login Identifier */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-gray-700">
-                Username <span className="text-red-500">*</span>
+                Email / Phone / Fayda ID <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="username"
-                value={form.username}
+                name="loginIdentifier"
+                value={form.loginIdentifier}
                 onChange={handleChange}
-                placeholder="Enter your username"
+                placeholder="Enter email, phone, or Fayda ID"
                 className={`w-full border rounded px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 transition ${
-                  errors.username ? "border-red-400 bg-red-50" : "border-gray-300 bg-white"
+                  errors.loginIdentifier ? "border-red-400 bg-red-50" : "border-gray-300 bg-white"
                 }`}
               />
-              {errors.username && <p className="text-xs text-red-500">{errors.username}</p>}
+              {errors.loginIdentifier && <p className="text-xs text-red-500">{errors.loginIdentifier}</p>}
             </div>
 
             {/* Password */}
@@ -112,7 +134,7 @@ export default function LoginPage() {
               <p className="text-center text-sm text-gray-500 mt-4">
                 Don&apos;t have an account?{" "}
                 <Link href="/register" className="text-green-500 font-semibold hover:underline">
-                  Register
+                  Register as Citizen
                 </Link>
               </p>
             </div>

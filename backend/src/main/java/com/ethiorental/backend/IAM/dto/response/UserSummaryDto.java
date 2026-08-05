@@ -1,4 +1,4 @@
-package com.ethiorental.backend.IAM.dto;
+package com.ethiorental.backend.IAM.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,6 +31,8 @@ public class UserSummaryDto {
     private LocalDateTime createdAt;
 
     private List<String> roles;
+
+    private String userType; // "GOVERNMENT_EMPLOYEE" or "CITIZEN"
 
     private boolean governmentEmployee;
     private String employeeNumber;

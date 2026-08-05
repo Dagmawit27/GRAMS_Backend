@@ -50,6 +50,17 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/api/v1/auth/**", "/api/v1/fayda/**", "/v3/api-docs/**", "/swagger-ui/**", "/error").permitAll()
+                                .requestMatchers("/api/v1/admin/**").hasAnyRole("SYSTEM_ADMINISTRATOR")
+                                .requestMatchers("/api/v1/officer/**").hasAnyRole(
+                                        "WOREDA_OFFICER",
+                                        "WOREDA_SUPERVISOR",
+                                        "SUB_CITY_ADMINISTRATOR",
+                                        "CITY_ADMINISTRATOR",
+                                        "TAX_OFFICER",
+                                        "SYSTEM_ADMINISTRATOR",
+                                        "AUDITOR"
+                                )
+                                .requestMatchers("/api/v1/users/**").authenticated()
                                 .anyRequest().authenticated()
                 );
 
