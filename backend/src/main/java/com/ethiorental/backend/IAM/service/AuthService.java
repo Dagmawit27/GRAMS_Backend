@@ -264,10 +264,13 @@ public class AuthService {
                 .email(user.getEmail())
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
+                .userType("CITIZEN")
+                .governmentEmployee(false)
                 .roles(roles);
 
         governmentEmployeeRepository.findByUser(user).ifPresent(emp -> {
             builder.governmentEmployee(true)
+                    .userType("GOVERNMENT_EMPLOYEE")
                     .employeeNumber(emp.getEmployeeNumber())
                     .department(emp.getDepartment())
                     .woredaCode(emp.getWoredaCode())

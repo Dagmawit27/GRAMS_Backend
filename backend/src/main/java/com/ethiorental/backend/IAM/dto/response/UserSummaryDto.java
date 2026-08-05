@@ -31,6 +31,8 @@ public class UserSummaryDto {
 
     private List<String> roles;
 
+    private String userType; // "GOVERNMENT_EMPLOYEE" or "CITIZEN"
+
     private boolean governmentEmployee;
     private String employeeNumber;
     private String department;

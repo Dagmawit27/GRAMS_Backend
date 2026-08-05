@@ -1,10 +1,8 @@
 package com.ethiorental.backend.IAM.controller;
 
-import com.ethiorental.backend.IAM.dto.*;
 import com.ethiorental.backend.IAM.dto.request.LoginRequest;
 import com.ethiorental.backend.IAM.dto.request.RefreshTokenRequest;
 import com.ethiorental.backend.IAM.dto.request.RegisterCitizenRequest;
-import com.ethiorental.backend.IAM.dto.request.RegisterEmployeeRequest;
 import com.ethiorental.backend.IAM.dto.response.AuthResponse;
 import com.ethiorental.backend.IAM.service.AuthService;
 import jakarta.validation.Valid;
@@ -25,12 +23,6 @@ public class AuthController {
     @PostMapping("/register/citizen")
     public ResponseEntity<AuthResponse> registerCitizen(@Valid @RequestBody RegisterCitizenRequest request) {
         AuthResponse response = authService.registerCitizen(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @PostMapping("/register/employee")
-    public ResponseEntity<AuthResponse> registerEmployee(@Valid @RequestBody RegisterEmployeeRequest request) {
-        AuthResponse response = authService.registerEmployee(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
