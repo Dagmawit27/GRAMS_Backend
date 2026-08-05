@@ -1,4 +1,4 @@
-package com.ethiorental.backend.IAM.dto;
+package com.ethiorental.backend.IAM.dto.response;
 
 import com.ethiorental.backend.IAM.enums.Gender;
 import lombok.AllArgsConstructor;

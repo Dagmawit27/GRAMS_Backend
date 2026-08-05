@@ -1,9 +1,10 @@
 package com.ethiorental.backend.IAM.adapter;
 
-import com.ethiorental.backend.IAM.dto.FaydaCitizenResponseDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import com.ethiorental.backend.IAM.dto.response.FaydaCitizenResponseDto;
 
 @Service
 public class FaydaAdapterService implements FaydaAdapter {

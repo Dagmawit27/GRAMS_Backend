@@ -1,6 +1,11 @@
 package com.ethiorental.backend.IAM.controller;
 
 import com.ethiorental.backend.IAM.dto.*;
+import com.ethiorental.backend.IAM.dto.request.LoginRequest;
+import com.ethiorental.backend.IAM.dto.request.RefreshTokenRequest;
+import com.ethiorental.backend.IAM.dto.request.RegisterCitizenRequest;
+import com.ethiorental.backend.IAM.dto.request.RegisterEmployeeRequest;
+import com.ethiorental.backend.IAM.dto.response.AuthResponse;
 import com.ethiorental.backend.IAM.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,8 @@
 package com.ethiorental.backend.IAM.controller;
 
 import com.ethiorental.backend.IAM.adapter.FaydaAdapterService;
-import com.ethiorental.backend.IAM.dto.FaydaCitizenResponseDto;
+import com.ethiorental.backend.IAM.dto.response.FaydaCitizenResponseDto;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

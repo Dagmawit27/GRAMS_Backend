@@ -15,7 +15,6 @@ public class RoleInitializerService implements CommandLineRunner {
     private final RoleRepository roleRepository;
 
     public static final List<String> SYSTEM_ROLES = List.of(
-            "CITIZEN",
             "LANDLORD",
             "TENANT",
             "WOREDA_OFFICER",

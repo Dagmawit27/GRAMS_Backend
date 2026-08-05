@@ -1,17 +1,19 @@
-package com.ethiorental.backend.IAM.dto;
+package com.ethiorental.backend.IAM.dto.request;
 
 import com.ethiorental.backend.IAM.enums.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
-public class RegisterCitizenRequest {
+public class RegisterEmployeeRequest {
 
     @NotNull(message = "Fayda ID is required")
     private Long faydaId;
@@ -40,9 +42,21 @@ public class RegisterCitizenRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 6 characters")
+    @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
-    // Optional role preference: LANDLORD, TENANT, or BOTH (default CITIZEN)
-    private String rolePreference;
+    @NotBlank(message = "Employee number is required")
+    private String employeeNumber;
+
+    @NotBlank(message = "Department is required")
+    private String department;
+
+    private String woredaCode;
+    private String subCityCode;
+
+    @NotBlank(message = "Position title is required")
+    private String positionTitle;
+
+    @NotEmpty(message = "At least one employee role must be specified")
+    private List<String> roles;
 }

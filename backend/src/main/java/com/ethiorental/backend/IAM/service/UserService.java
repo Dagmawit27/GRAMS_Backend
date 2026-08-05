@@ -1,6 +1,6 @@
 package com.ethiorental.backend.IAM.service;
 
-import com.ethiorental.backend.IAM.dto.UserSummaryDto;
+import com.ethiorental.backend.IAM.dto.response.UserSummaryDto;
 import com.ethiorental.backend.IAM.entity.User;
 import com.ethiorental.backend.IAM.repository.UserRepository;
 import com.ethiorental.backend.IAM.security.CustomUserDetailsService;
