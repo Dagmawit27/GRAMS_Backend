@@ -1,7 +1,6 @@
 package com.ethiorental.backend.IAM.service;
 
 import com.ethiorental.backend.IAM.adapter.FaydaAdapterService;
-import com.ethiorental.backend.IAM.dto.*;
 import com.ethiorental.backend.IAM.dto.request.LoginRequest;
 import com.ethiorental.backend.IAM.dto.request.RefreshTokenRequest;
 import com.ethiorental.backend.IAM.dto.request.RegisterCitizenRequest;
