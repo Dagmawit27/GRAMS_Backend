@@ -19,7 +19,7 @@ export default function LoginPage() {
     if (!form.username.trim()) e.username = "Username is required.";
     if (!form.password) e.password = "Password is required.";
     return e;
-  }
+  } 
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });

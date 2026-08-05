@@ -1,12 +1,13 @@
 package com.ethiorental.backend.IAM.controller;
 
-import com.ethiorental.backend.IAM.dto.*;
-import com.ethiorental.backend.IAM.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import com.ethiorental.backend.IAM.dto.*;
+import com.ethiorental.backend.IAM.service.AuthService;
 
 import java.util.Map;
 
@@ -29,11 +30,18 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
+    @PostMapping("/login/citizen")
+    public ResponseEntity<AuthResponse> loginCitizen(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = authService.loginCitizen(request);
         return ResponseEntity.ok(response);
     }
+
+
+    // @PostMapping("/login/employee")
+    // public ResponseEntity<AuthResponse> loginEmployee(@Valid @RequestBody LoginRequest request) {
+    //     AuthResponse response = authService.loginEmployee(request);
+    //     return ResponseEntity.ok(response);
+    // }
 
     @PostMapping("/refresh-token")
     public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {

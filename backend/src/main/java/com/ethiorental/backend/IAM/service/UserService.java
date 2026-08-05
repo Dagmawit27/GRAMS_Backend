@@ -1,12 +1,13 @@
 package com.ethiorental.backend.IAM.service;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ethiorental.backend.IAM.dto.UserSummaryDto;
 import com.ethiorental.backend.IAM.entity.User;
 import com.ethiorental.backend.IAM.repository.UserRepository;
 import com.ethiorental.backend.IAM.security.CustomUserDetailsService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;

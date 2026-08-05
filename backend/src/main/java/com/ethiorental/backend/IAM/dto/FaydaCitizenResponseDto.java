@@ -1,12 +1,13 @@
 package com.ethiorental.backend.IAM.dto;
 
-import com.ethiorental.backend.IAM.enums.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+
+import com.ethiorental.backend.IAM.enums.Gender;
 
 @Data
 @Builder

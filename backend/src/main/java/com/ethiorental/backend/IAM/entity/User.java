@@ -9,9 +9,12 @@ import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 import org.hibernate.type.SqlTypes;
+
+import com.ethiorental.backend.IAM.enums.*;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Email;
-import com.ethiorental.backend.IAM.enums.*;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;

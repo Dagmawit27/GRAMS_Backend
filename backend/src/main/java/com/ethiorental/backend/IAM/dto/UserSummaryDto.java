@@ -1,7 +1,5 @@
 package com.ethiorental.backend.IAM.dto;
 
-import com.ethiorental.backend.IAM.enums.Gender;
-import com.ethiorental.backend.IAM.enums.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +9,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import com.ethiorental.backend.IAM.enums.Gender;
+import com.ethiorental.backend.IAM.enums.Status;
 
 @Data
 @Builder

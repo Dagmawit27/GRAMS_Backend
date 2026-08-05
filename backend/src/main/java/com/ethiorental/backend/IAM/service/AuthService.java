@@ -1,5 +1,10 @@
 package com.ethiorental.backend.IAM.service;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ethiorental.backend.IAM.adapter.FaydaAdapterService;
 import com.ethiorental.backend.IAM.dto.*;
 import com.ethiorental.backend.IAM.entity.*;
@@ -7,10 +12,6 @@ import com.ethiorental.backend.IAM.enums.Status;
 import com.ethiorental.backend.IAM.repository.*;
 import com.ethiorental.backend.IAM.security.CustomUserDetailsService;
 import com.ethiorental.backend.IAM.security.JwtUtils;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -139,7 +140,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse loginCitizen(LoginRequest request) {
         User user = userDetailsService.findUserByIdentifier(request.getLoginIdentifier())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid login identifier or password."));
 

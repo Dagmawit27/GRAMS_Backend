@@ -1,6 +1,5 @@
 package com.ethiorental.backend.IAM.dto;
 
-import com.ethiorental.backend.IAM.enums.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -11,6 +10,8 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.List;
+
+import com.ethiorental.backend.IAM.enums.Gender;
 
 @Data
 public class RegisterEmployeeRequest {

@@ -1,6 +1,5 @@
 package com.ethiorental.backend.IAM.dto;
 
-import com.ethiorental.backend.IAM.enums.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,6 +8,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.time.LocalDate;
+
+import com.ethiorental.backend.IAM.enums.Gender;
 
 @Data
 public class RegisterCitizenRequest {

@@ -1,6 +1,5 @@
 package com.ethiorental.backend.IAM.entity;
 
-import com.ethiorental.backend.IAM.enums.Status;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,6 +10,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
+
+import com.ethiorental.backend.IAM.enums.Status;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

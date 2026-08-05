@@ -1,10 +1,11 @@
 package com.ethiorental.backend.IAM.service;
 
-import com.ethiorental.backend.IAM.entity.Role;
-import com.ethiorental.backend.IAM.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+
+import com.ethiorental.backend.IAM.entity.Role;
+import com.ethiorental.backend.IAM.repository.RoleRepository;
 
 import java.util.List;
 

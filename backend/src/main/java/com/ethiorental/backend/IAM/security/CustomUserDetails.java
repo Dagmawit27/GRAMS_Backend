@@ -1,12 +1,13 @@
 package com.ethiorental.backend.IAM.security;
 
-import com.ethiorental.backend.IAM.entity.User;
-import com.ethiorental.backend.IAM.enums.Status;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.ethiorental.backend.IAM.entity.User;
+import com.ethiorental.backend.IAM.enums.Status;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
