@@ -1,17 +1,14 @@
 package com.ethiorental.backend.IAM.security;
 
+import com.ethiorental.backend.IAM.entity.CitizenCredential;
+import com.ethiorental.backend.IAM.entity.EmployeeCredential;
+import com.ethiorental.backend.IAM.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ethiorental.backend.IAM.entity.GovernmentEmployee;
-import com.ethiorental.backend.IAM.entity.User;
-import com.ethiorental.backend.IAM.repository.*;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,65 +16,48 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final GovernmentEmployeeRepository governmentEmployeeRepository;
+    private final CitizenCredentialRepository citizenCredentialRepository;
+    private final EmployeeCredentialRepository employeeCredentialRepository;
+    private final CitizenRoleRepository citizenRoleRepository;
     private final EmployeeRoleRepository employeeRoleRepository;
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-        User user = findUserByIdentifier(identifier)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + identifier));
-
-        List<String> roles = extractRolesForUser(user);
-        return new CustomUserDetails(user, roles);
-    }
-
-    public Optional<User> findUserByIdentifier(String identifier) {
-        if (identifier == null || identifier.isBlank()) {
-            return Optional.empty();
-        }
-        // Try search by email
-        Optional<User> byEmail = userRepository.findByEmail(identifier);
-        if (byEmail.isPresent()) return byEmail;
-
-        // Try search by phone
-        Optional<User> byPhone = userRepository.findByPhoneNumber(identifier);
-        if (byPhone.isPresent()) return byPhone;
-
-        // Try search by Fayda ID if numeric
-        try {
-            Long faydaId = Long.parseLong(identifier);
-            return userRepository.findByFaydaId(faydaId);
-        } catch (NumberFormatException ignored) {
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Try employee first (admins/officers login via employee credentials)
+        Optional<EmployeeCredential> empCred = employeeCredentialRepository.findByUsername(username);
+        if (empCred.isPresent()) {
+            EmployeeCredential cred = empCred.get();
+            List<SimpleGrantedAuthority> authorities = employeeRoleRepository
+                    .findByEmployee(cred.getEmployee())
+                    .stream()
+                    .map(er -> {
+                        String name = er.getRole().getRoleName();
+                        return new SimpleGrantedAuthority(name.startsWith("ROLE_") ? name : "ROLE_" + name);
+                    })
+                    .toList();
+            return new User(cred.getUsername(), cred.getPasswordHash(), authorities);
         }
 
-        return Optional.empty();
-    }
-
-    public List<String> extractRolesForUser(User user) {
-        List<String> roleNames = new ArrayList<>();
-
-        // 1. Roles from user_roles table
-        userRoleRepository.findByUser(user).forEach(ur -> {
-            if (ur.getRole() != null && ur.getRole().getRoleName() != null) {
-                roleNames.add(ur.getRole().getRoleName());
+        // Then try citizen
+        Optional<CitizenCredential> citizenCred = citizenCredentialRepository.findByUsername(username);
+        if (citizenCred.isPresent()) {
+            CitizenCredential cred = citizenCred.get();
+            List<SimpleGrantedAuthority> authorities = citizenRoleRepository
+                    .findByCitizen(cred.getCitizen())
+                    .stream()
+                    .map(cr -> {
+                        String name = cr.getRole().getRoleName();
+                        return new SimpleGrantedAuthority(name.startsWith("ROLE_") ? name : "ROLE_" + name);
+                    })
+                    .toList();
+            // Default CITIZEN role if none assigned
+            if (authorities.isEmpty()) {
+                authorities = List.of(new SimpleGrantedAuthority("ROLE_CITIZEN"));
             }
-        });
-
-        // 2. Roles from employee_roles table if user is a government employee
-        Optional<GovernmentEmployee> empOpt = governmentEmployeeRepository.findByUser(user);
-        if (empOpt.isPresent()) {
-            employeeRoleRepository.findByEmployee(empOpt.get()).forEach(er -> {
-                if (er.getRole() != null && er.getRole().getRoleName() != null) {
-                    if (!roleNames.contains(er.getRole().getRoleName())) {
-                        roleNames.add(er.getRole().getRoleName());
-                    }
-                }
-            });
+            return new User(cred.getUsername(), cred.getPasswordHash(), authorities);
         }
 
-        return roleNames;
+        throw new UsernameNotFoundException("User not found: " + username);
     }
 }

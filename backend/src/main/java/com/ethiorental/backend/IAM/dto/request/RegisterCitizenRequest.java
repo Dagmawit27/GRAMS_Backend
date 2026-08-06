@@ -1,15 +1,10 @@
 package com.ethiorental.backend.IAM.dto.request;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import com.ethiorental.backend.IAM.enums.Gender;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
-
-import com.ethiorental.backend.IAM.enums.Gender;
 
 @Data
 public class RegisterCitizenRequest {
@@ -20,13 +15,12 @@ public class RegisterCitizenRequest {
     @NotBlank(message = "First name is required")
     private String firstName;
 
-    @NotBlank(message = "Middle name is required")
     private String middleName;
 
     @NotBlank(message = "Last name is required")
     private String lastName;
 
-    @NotNull(message = "Gender is required (MALE or FEMALE)")
+    @NotNull(message = "Gender is required")
     private Gender gender;
 
     @NotNull(message = "Date of birth is required")
@@ -44,6 +38,6 @@ public class RegisterCitizenRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    // Optional role preference: LANDLORD, TENANT, or BOTH (default CITIZEN)
+    // LANDLORD, TENANT, or leave null for default CITIZEN
     private String rolePreference;
 }

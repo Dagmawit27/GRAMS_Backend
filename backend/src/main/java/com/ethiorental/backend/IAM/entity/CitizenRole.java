@@ -7,18 +7,18 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "employee_roles",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"employee_id", "role_id"}))
+@Table(name = "citizen_roles",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"citizen_id", "role_id"}))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class EmployeeRole {
+public class CitizenRole {
 
     @Id
     @UuidGenerator
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", nullable = false)
-    private GovernmentEmployee employee;
+    @JoinColumn(name = "citizen_id", nullable = false)
+    private Citizen citizen;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)

@@ -4,20 +4,27 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "citizen_credentials")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Role {
+public class CitizenCredential {
 
     @Id
     @UuidGenerator
     private UUID id;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "citizen_id", nullable = false, unique = true)
+    private Citizen citizen;
+
     @Column(nullable = false, unique = true)
-    private String roleName;
+    private String username;
 
     @Column(nullable = false)
-    private String roleType; // e.g. CITIZEN, EMPLOYEE
+    private String passwordHash;
+
+    private LocalDateTime lastLogin;
 }

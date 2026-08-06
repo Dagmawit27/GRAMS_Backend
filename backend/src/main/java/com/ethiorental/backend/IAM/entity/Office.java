@@ -7,17 +7,21 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "offices")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Role {
+public class Office {
 
     @Id
     @UuidGenerator
     private UUID id;
 
-    @Column(nullable = false, unique = true)
-    private String roleName;
+    @Column(nullable = false)
+    private String officeName;
 
     @Column(nullable = false)
-    private String roleType; // e.g. CITIZEN, EMPLOYEE
+    private String officeType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_office_id")
+    private Office parentOffice;
 }

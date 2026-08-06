@@ -1,38 +1,31 @@
 package com.ethiorental.backend.IAM.dto.request;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import com.ethiorental.backend.IAM.enums.Gender;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.util.List;
-
-import com.ethiorental.backend.IAM.enums.Gender;
+import java.util.UUID;
 
 @Data
 public class RegisterEmployeeRequest {
 
-    @NotNull(message = "Fayda ID is required")
-    private Long faydaId;
+    @NotBlank(message = "Employee number is required")
+    private String employeeNumber;
+
+    @NotNull(message = "Office ID is required")
+    private UUID officeId;
 
     @NotBlank(message = "First name is required")
     private String firstName;
 
-    @NotBlank(message = "Middle name is required")
     private String middleName;
 
     @NotBlank(message = "Last name is required")
     private String lastName;
 
-    @NotNull(message = "Gender is required (MALE or FEMALE)")
+    @NotNull(message = "Gender is required")
     private Gender gender;
-
-    @NotNull(message = "Date of birth is required")
-    private LocalDate dateOfBirth;
 
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "^\\+?[0-9]{9,15}$", message = "Invalid phone number format")
@@ -42,22 +35,13 @@ public class RegisterEmployeeRequest {
     @Email(message = "Invalid email format")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
-    private String password;
-
-    @NotBlank(message = "Employee number is required")
-    private String employeeNumber;
-
-    @NotBlank(message = "Department is required")
-    private String department;
-
-    private String woredaCode;
-    private String subCityCode;
-
     @NotBlank(message = "Position title is required")
     private String positionTitle;
 
-    @NotEmpty(message = "At least one employee role must be specified")
+    // Optional: if not provided, default password is "Change@{employeeNumber}"
+    @Size(min = 6, message = "Password must be at least 6 characters")
+    private String password;
+
+    @NotEmpty(message = "At least one role must be assigned")
     private List<String> roles;
 }

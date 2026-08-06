@@ -19,7 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('SYSTEM_ADMINISTRATOR', 'ROLE_SYSTEM_ADMINISTRATOR')")
+@PreAuthorize("hasRole('SYSTEM_ADMINISTRATOR')")
 public class AdminEmployeeController {
 
     private final AuthService authService;
@@ -27,24 +27,23 @@ public class AdminEmployeeController {
 
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, Object>> getAdminDashboard() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        UserSummaryDto adminProfile = userService.getUserProfileByEmail(email);
-
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserSummaryDto profile = userService.getCurrentUserProfile(auth.getName());
         return ResponseEntity.ok(Map.of(
                 "portal", "System Administrator Portal",
                 "message", "Welcome to the GRAMS System Administration Portal",
-                "admin", adminProfile
+                "admin", profile
         ));
     }
 
     /**
-     * Government employee registration endpoint.
-     * Restricted to System Administrators only for security.
+     * Register a new government employee.
+     * Only SYSTEM_ADMINISTRATOR can call this.
+     * If no password is provided, default is "Change@{employeeNumber}".
      */
     @PostMapping("/employees/register")
-    public ResponseEntity<AuthResponse> registerEmployee(@Valid @RequestBody RegisterEmployeeRequest request) {
-        AuthResponse response = authService.registerEmployee(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<AuthResponse> registerEmployee(
+            @Valid @RequestBody RegisterEmployeeRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerEmployee(request));
     }
 }
