@@ -1,0 +1,26 @@
+package com.ethiorental.backend.IAM.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.UuidGenerator;
+
+import java.util.UUID;
+
+@Entity
+@Table(name = "citizen_roles",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"citizen_id", "role_id"}))
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class CitizenRole {
+
+    @Id
+    @UuidGenerator
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "citizen_id", nullable = false)
+    private Citizen citizen;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
+}
