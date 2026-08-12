@@ -98,3 +98,121 @@ export function getSession(): { token: string; user: UserSummary } | null {
     return null;
   }
 }
+
+// ── Property ─────────────────────────────────────────────────────────────────
+
+export type PropertyStatus =
+  | "PENDING"
+  | "VERIFIED"
+  | "REJECTED"
+  | "LISTED"
+  | "RENTED"
+  | "UNLISTED";
+
+export interface AddressRequest {
+  city: string;
+  subCity: string;
+  woreda: string;
+  kebele?: string;
+  street?: string;
+  houseNumber?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface PropertyRequest {
+  propertyType: string;
+  address: AddressRequest;
+  houseNumber?: string;
+  floorNumber?: string;
+  bedroomCount?: number;
+  bathroomCount?: number;
+  areaSqMeter?: number;
+  monthlyRent: number;
+  furnishingStatus?: string;
+  description?: string;
+}
+
+export interface PropertyResponse {
+  id: string;
+  propertyCode: string;
+  propertyType: string;
+  address: {
+    id: string;
+    city: string;
+    subCity: string;
+    woreda: string;
+    kebele?: string;
+    street?: string;
+    houseNumber?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  houseNumber?: string;
+  floorNumber?: string;
+  bedroomCount?: number;
+  bathroomCount?: number;
+  areaSqMeter?: number;
+  monthlyRent: number;
+  furnishingStatus?: string;
+  description?: string;
+  status: PropertyStatus;
+  landlordId: string;
+  images: { id: string; imageUrl: string; isCover: boolean; uploadedAt: string }[];
+  ownershipDocuments: {
+    id: string;
+    documentNumber: string;
+    documentType: string;
+    filePath: string;
+    issueDate?: string;
+    expiryDate?: string;
+  }[];
+  createdAt: string;
+}
+
+export async function registerProperty(
+  token: string,
+  data: PropertyRequest,
+  images?: File[],
+  documents?: File[]
+): Promise<PropertyResponse> {
+  const form = new FormData();
+  form.append(
+    "property",
+    new Blob([JSON.stringify(data)], { type: "application/json" })
+  );
+  images?.forEach((f) => form.append("images", f));
+  documents?.forEach((f) => form.append("documents", f));
+
+  const res = await fetch(`${BASE_URL}/properties`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const json = await parseResponse(res);
+  if (!res.ok) throw new Error(json.message || "Failed to register property.");
+  return json;
+}
+
+export async function getMyProperties(
+  token: string
+): Promise<PropertyResponse[]> {
+  const res = await fetch(`${BASE_URL}/properties/my`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await parseResponse(res);
+  if (!res.ok) throw new Error(json.message || "Failed to load properties.");
+  return json;
+}
+
+export async function getPropertiesByStatus(
+  status: PropertyStatus = "LISTED",
+  token?: string
+): Promise<PropertyResponse[]> {
+  const res = await fetch(`${BASE_URL}/properties?status=${status}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const json = await parseResponse(res);
+  if (!res.ok) throw new Error(json.message || "Failed to load properties.");
+  return json;
+}

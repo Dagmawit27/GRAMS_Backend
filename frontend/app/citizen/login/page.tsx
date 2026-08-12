@@ -43,7 +43,18 @@ export default function CitizenLoginPage() {
   }
 
   return (
+    <div>
+      <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+        <Link href="/citizen" className="text-green-500 text-sm font-semibold tracking-widest uppercase">
+          Rental System
+        </Link>
+        <span className="text-sm text-gray-500">
+          Don&apos;t have an account?{" "}
+          <Link href="/citizen/register" className="text-green-500 font-semibold hover:underline">Register</Link>
+        </span>
+      </div>
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
+      
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-green-500 px-8 py-6">
@@ -108,6 +119,7 @@ export default function CitizenLoginPage() {
           </p>
         </form>
       </div>
+    </div>
     </div>
   );
 }

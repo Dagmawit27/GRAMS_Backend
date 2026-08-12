@@ -56,6 +56,7 @@ export default function CitizenRegisterPage() {
 
     setLoading(true);
     try {
+      console.log(form);
       const result = await registerCitizen({
         faydaId: Number(form.faydaId),
         firstName: form.firstName,
@@ -80,7 +81,7 @@ export default function CitizenRegisterPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-        <Link href="/" className="text-green-500 text-sm font-semibold tracking-widest uppercase">
+        <Link href="/citizen" className="text-green-500 text-sm font-semibold tracking-widest uppercase">
           Rental System
         </Link>
         <span className="text-sm text-gray-500">
@@ -89,11 +90,11 @@ export default function CitizenRegisterPage() {
         </span>
       </div>
 
-      <div className="flex-1 flex items-start justify-center py-10 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex-1 flex items-start justify-center py-10 px-4">
         <div className="bg-white rounded-lg shadow-md w-full max-w-2xl">
-          <div className="border-b border-gray-100 px-8 py-6">
-            <h1 className="text-2xl font-bold text-gray-800">Citizen Registration</h1>
-            <p className="text-sm text-gray-500 mt-1">Create your GRAMS citizen account.</p>
+          <div className="bg-gradient-to-r from-green-600 to-green-500 px-8 py-6 border-b border-gray-100">
+            <h1 className="text-2xl font-bold text-white">Citizen Registration</h1>
+            <p className="text-green-50 text-sm mt-1">Create your GRAMS citizen account.</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate className="px-8 py-8 space-y-8">
