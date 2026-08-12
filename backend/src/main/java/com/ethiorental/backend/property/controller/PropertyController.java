@@ -2,6 +2,7 @@ package com.ethiorental.backend.property.controller;
 
 import com.ethiorental.backend.property.dto.PropertyRequest;
 import com.ethiorental.backend.property.dto.PropertyResponse;
+import com.ethiorental.backend.property.dto.StatusUpdateRequest;
 import com.ethiorental.backend.property.enums.PropertyStatus;
 import com.ethiorental.backend.property.service.PropertyService;
 import jakarta.validation.Valid;
@@ -13,7 +14,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -67,5 +67,20 @@ public class PropertyController {
     public ResponseEntity<List<PropertyResponse>> getPropertiesByStatus(
             @RequestParam(defaultValue = "LISTED") PropertyStatus status) {
         return ResponseEntity.ok(propertyService.getPropertiesByStatus(status));
+    }
+
+    /**
+     * Update property status — WOREDA_OFFICER or WOREDA_SUPERVISOR only.
+     * Officer: PENDING → VERIFIED or REJECTED
+     * Supervisor: VERIFIED → LISTED or REJECTED (suspended)
+     */
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('WOREDA_OFFICER','WOREDA_SUPERVISOR','SUB_CITY_ADMINISTRATOR','CITY_ADMINISTRATOR','SYSTEM_ADMINISTRATOR')")
+    public ResponseEntity<PropertyResponse> updatePropertyStatus(
+            @PathVariable UUID id,
+            @RequestBody @Valid StatusUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(propertyService.updatePropertyStatus(
+                id, request.status(), request.remarks(), userDetails.getUsername()));
     }
 }

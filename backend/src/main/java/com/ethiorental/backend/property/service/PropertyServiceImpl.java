@@ -1,7 +1,9 @@
 package com.ethiorental.backend.property.service;
 
 import com.ethiorental.backend.IAM.entity.Citizen;
+import com.ethiorental.backend.IAM.entity.GovernmentEmployee;
 import com.ethiorental.backend.IAM.repository.CitizenRepository;
+import com.ethiorental.backend.IAM.repository.EmployeeCredentialRepository;
 import com.ethiorental.backend.property.dto.PropertyRequest;
 import com.ethiorental.backend.property.dto.PropertyResponse;
 import com.ethiorental.backend.property.entity.*;
@@ -25,6 +27,8 @@ public class PropertyServiceImpl implements PropertyService {
     private final CitizenRepository citizenRepository;
     private final PropertyMapper mapper;
     private final MinioStorageService storageService;
+    private final PropertyVerificationRepository verificationRepository;
+    private final EmployeeCredentialRepository employeeCredentialRepository;
 
     // ── Register ──────────────────────────────────────────────────────────────
 
@@ -119,6 +123,31 @@ public class PropertyServiceImpl implements PropertyService {
     public List<PropertyResponse> getPropertiesByStatus(PropertyStatus status) {
         return propertyRepository.findByStatus(status)
                 .stream().map(mapper::toPropertyResponse).toList();
+    }
+
+    @Override
+    @Transactional
+    public PropertyResponse updatePropertyStatus(UUID id, PropertyStatus newStatus, String remarks, String officerUsername) {
+        Property property = propertyRepository.findById(id)
+                .orElseThrow(() -> new PropertyNotFoundException("Property not found: " + id));
+
+        GovernmentEmployee officer = employeeCredentialRepository.findByUsername(officerUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Officer not found"))
+                .getEmployee();
+
+        property.setStatus(newStatus);
+        Property saved = propertyRepository.save(property);
+
+        PropertyVerification verification = PropertyVerification.builder()
+                .property(saved)
+                .verifiedBy(officer)
+                .office(officer.getOffice())
+                .verificationStatus(newStatus.name())
+                .remarks(remarks)
+                .build();
+        verificationRepository.save(verification);
+
+        return mapper.toPropertyResponse(saved);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

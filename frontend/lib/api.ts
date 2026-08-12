@@ -216,3 +216,22 @@ export async function getPropertiesByStatus(
   if (!res.ok) throw new Error(json.message || "Failed to load properties.");
   return json;
 }
+
+export async function updatePropertyStatus(
+  token: string,
+  id: string,
+  status: PropertyStatus,
+  remarks?: string
+): Promise<PropertyResponse> {
+  const res = await fetch(`${BASE_URL}/properties/${id}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status, remarks }),
+  });
+  const json = await parseResponse(res);
+  if (!res.ok) throw new Error(json.message || "Failed to update status.");
+  return json;
+}

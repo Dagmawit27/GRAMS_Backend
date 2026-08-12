@@ -1,64 +1,105 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ClipboardCheck, CheckCircle, Building2 } from "lucide-react"
+import { getSession } from "@/lib/api"
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import Link from "next/link"
+import type { UserSummary } from "@/lib/api"
 
 export default function OfficerDashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const router = useRouter()
+  const [user, setUser] = useState<UserSummary | null>(null)
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      router.push("/login");
-      return;
+    const session = getSession()
+    if (!session || session.user.userType !== "GOVERNMENT_EMPLOYEE") {
+      router.push("/officer/login")
+      return
     }
-    try {
-      const userData = JSON.parse(userStr);
-      if (userData.userType !== "GOVERNMENT_EMPLOYEE" && !userData.governmentEmployee) {
-        router.push("/unauthorized");
-        return;
-      }
-      setUser(userData);
-    } catch {
-      router.push("/login");
-    }
-  }, [router]);
+    setUser(session.user)
+  }, [router])
 
-  if (!user) return <div className="p-8">Loading Officer Portal...</div>;
+  if (!user) return (
+    <div className="flex h-screen items-center justify-center text-sm text-muted-foreground">Loading...</div>
+  )
+
+  const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+  const role = user.roles?.[0] ?? ""
+  const isOfficer = role === "WOREDA_OFFICER"
+  const isSupervisor = role === "WOREDA_SUPERVISOR"
 
   return (
-    <div className="min-h-screen bg-slate-100 p-8">
-      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow p-6">
-        <div className="border-b pb-4 mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Government Officer Portal</h1>
-            <p className="text-sm text-slate-500">Official Government Verification & Compliance Dashboard</p>
+    <div className="flex flex-col min-h-screen">
+      <header className="flex h-12 items-center gap-3 border-b px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="h-4" />
+        <span className="text-sm font-medium text-muted-foreground">
+          Federal Democratic Republic of Ethiopia — GRAMS
+        </span>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center text-white text-xs font-bold">
+            {initials}
           </div>
-          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-            Officer Domain: {user.subCityCode || "City Level"} / {user.woredaCode || "Woreda Wide"}
-          </span>
+          <span className="text-sm font-medium hidden sm:block">{user.firstName} {user.lastName}</span>
+        </div>
+      </header>
+
+      <main className="flex-1 p-6 space-y-6 max-w-4xl mx-auto w-full">
+        <div>
+          <h1 className="text-xl font-semibold">Welcome, {user.firstName}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {role.replace(/_/g, " ")} — Government Rental & Asset Management System
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-slate-50 p-4 rounded border">
-            <h3 className="text-sm font-semibold text-slate-600">Employee Number</h3>
-            <p className="text-lg font-bold text-slate-800">{user.employeeNumber || "N/A"}</p>
-          </div>
-          <div className="bg-slate-50 p-4 rounded border">
-            <h3 className="text-sm font-semibold text-slate-600">Department</h3>
-            <p className="text-lg font-bold text-slate-800">{user.department || "N/A"}</p>
-          </div>
-          <div className="bg-slate-50 p-4 rounded border">
-            <h3 className="text-sm font-semibold text-slate-600">Assigned Roles</h3>
-            <p className="text-sm font-medium text-blue-600">{user.roles?.join(", ") || "OFFICER"}</p>
-          </div>
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {(isOfficer || !isSupervisor) && (
+            <Link href="/officer/dashboard/review">
+              <Card className="hover:ring-1 hover:ring-blue-400 transition-all cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <ClipboardCheck className="h-5 w-5 text-blue-700" />
+                    <CardTitle>Review Queue</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Review PENDING properties submitted by landlords. Forward verified ones to the supervisor.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          )}
 
-        <div className="bg-amber-50 border border-amber-200 p-4 rounded text-sm text-amber-800">
-          <strong>Security Notice:</strong> Access to government records is logged and restricted according to officer jurisdiction.
+          {(isSupervisor || !isOfficer) && (
+            <Link href="/officer/dashboard/supervisor">
+              <Card className="hover:ring-1 hover:ring-green-400 transition-all cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-700" />
+                    <CardTitle>Supervisor Queue</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Approve or suspend VERIFIED properties. Approved ones become publicly LISTED.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          )}
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Listed Properties</CardTitle>
+              </div>
+              <CardDescription>Browse all currently active listed rental properties.</CardDescription>
+            </CardHeader>
+          </Card>
         </div>
-      </div>
+      </main>
     </div>
-  );
+  )
 }

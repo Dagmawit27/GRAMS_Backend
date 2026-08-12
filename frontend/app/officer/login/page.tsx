@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { saveSession } from "@/lib/api";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
 
 export default function LoginOfficer() {
   const router = useRouter();
@@ -15,10 +18,10 @@ export default function LoginOfficer() {
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.loginIdentifier.trim()) e.loginIdentifier = "Email, Phone, or Fayda ID is required.";
+    if (!form.loginIdentifier.trim()) e.loginIdentifier = "Email or Employee ID is required.";
     if (!form.password) e.password = "Password is required.";
     return e;
-  } 
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -33,31 +36,17 @@ export default function LoginOfficer() {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/login", {
+      const res = await fetch(`${BASE_URL}/auth/login/employee`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Invalid credentials or unauthorized.");
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Invalid credentials.");
 
-      const data = await res.json();
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      const roles: string[] = data.user?.roles || [];
-      const userType: string = data.user?.userType || "";
-
-      // Route to URL based on user role and domain
-      if (roles.includes("SYSTEM_ADMINISTRATOR") || roles.includes("ROLE_SYSTEM_ADMINISTRATOR")) {
-        router.push("/admin/dashboard");
-      } else if (userType === "GOVERNMENT_EMPLOYEE" || data.user?.governmentEmployee) {
-        router.push("/officer/dashboard");
-      }
+      saveSession(data);
+      router.push("/officer/dashboard");
     } catch (err: unknown) {
       setServerError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
