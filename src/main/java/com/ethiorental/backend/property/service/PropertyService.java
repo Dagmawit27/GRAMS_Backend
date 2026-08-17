@@ -24,4 +24,7 @@ public interface PropertyService {
 
     /** Get all properties filtered by status (public/officer facing). */
     List<PropertyResponse> getPropertiesByStatus(PropertyStatus status);
+
+    /** Update property status — used by officers during the review workflow. */
+    PropertyResponse updatePropertyStatus(UUID id, PropertyStatus newStatus, String remarks, String officerUsername);
 }

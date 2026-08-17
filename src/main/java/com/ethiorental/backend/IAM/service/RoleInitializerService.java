@@ -92,5 +92,75 @@ public class RoleInitializerService implements CommandLineRunner {
 
             log.info("Bootstrapped default System Administrator: {}", adminEmail);
         }
+
+        // 4. Bootstrap sample Woreda Office
+        Office woredaOffice = officeRepository.findAll().stream()
+                .filter(o -> "WOREDA_OFFICE".equals(o.getOfficeType()))
+                .findFirst()
+                .orElseGet(() -> officeRepository.save(Office.builder()
+                        .officeName("Bole Woreda 03 Office")
+                        .officeType("WOREDA_OFFICE")
+                        .parentOffice(adminOffice)
+                        .build()));
+
+        // 5. Bootstrap sample Woreda Officer
+        String officerEmail = "officer@grams.gov.et";
+        if (!employeeCredentialRepository.existsByUsername(officerEmail)) {
+            GovernmentEmployee officer = GovernmentEmployee.builder()
+                    .employeeNumber("EMP-0002")
+                    .office(woredaOffice)
+                    .firstName("Abebe")
+                    .middleName("Tadesse")
+                    .lastName("Bekele")
+                    .gender(Gender.MALE)
+                    .phone("+251911100001")
+                    .email(officerEmail)
+                    .position("Woreda Property Officer")
+                    .status(EmployeeStatus.ACTIVE)
+                    .build();
+            employeeRepository.save(officer);
+
+            employeeCredentialRepository.save(EmployeeCredential.builder()
+                    .employee(officer)
+                    .username(officerEmail)
+                    .passwordHash(passwordEncoder.encode("Officer@1234"))
+                    .build());
+
+            Role officerRole = roleRepository.findByRoleName("WOREDA_OFFICER").orElseThrow();
+            employeeRoleRepository.save(EmployeeRole.builder()
+                    .employee(officer).role(officerRole).build());
+
+            log.info("Bootstrapped sample Woreda Officer: {}", officerEmail);
+        }
+
+        // 6. Bootstrap sample Woreda Supervisor
+        String supervisorEmail = "supervisor@grams.gov.et";
+        if (!employeeCredentialRepository.existsByUsername(supervisorEmail)) {
+            GovernmentEmployee supervisor = GovernmentEmployee.builder()
+                    .employeeNumber("EMP-0003")
+                    .office(woredaOffice)
+                    .firstName("Tigist")
+                    .middleName("Haile")
+                    .lastName("Mekonen")
+                    .gender(Gender.FEMALE)
+                    .phone("+251911100002")
+                    .email(supervisorEmail)
+                    .position("Woreda Property Supervisor")
+                    .status(EmployeeStatus.ACTIVE)
+                    .build();
+            employeeRepository.save(supervisor);
+
+            employeeCredentialRepository.save(EmployeeCredential.builder()
+                    .employee(supervisor)
+                    .username(supervisorEmail)
+                    .passwordHash(passwordEncoder.encode("Supervisor@1234"))
+                    .build());
+
+            Role supervisorRole = roleRepository.findByRoleName("WOREDA_SUPERVISOR").orElseThrow();
+            employeeRoleRepository.save(EmployeeRole.builder()
+                    .employee(supervisor).role(supervisorRole).build());
+
+            log.info("Bootstrapped sample Woreda Supervisor: {}", supervisorEmail);
+        }
     }
 }
