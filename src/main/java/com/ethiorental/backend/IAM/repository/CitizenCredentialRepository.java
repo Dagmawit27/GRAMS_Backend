@@ -9,6 +9,6 @@ import java.util.UUID;
 
 @Repository
 public interface CitizenCredentialRepository extends JpaRepository<CitizenCredential, UUID> {
-    Optional<CitizenCredential> findByUsername(String username);
-    boolean existsByUsername(String username);
+    Optional<CitizenCredential> findByEmail(String email);
+    boolean existsByEmail(String email);
 }

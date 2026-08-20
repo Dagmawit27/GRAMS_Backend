@@ -19,7 +19,7 @@ import java.time.Instant;
 
 @RestController
 @RequestMapping("/api/v1/audit")
-@PreAuthorize("hasAnyRole('SYSTEM_ADMINISTRATOR', 'AUDITOR', 'ROLE_SYSTEM_ADMINISTRATOR', 'ROLE_AUDITOR')")
+@PreAuthorize("hasAnyRole('SYSTEM_ADMINISTRATOR', 'AUDITOR')")
 public class AuditLogController {
 
     private final AuditLogRepository auditLogRepository;

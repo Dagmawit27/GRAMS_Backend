@@ -1,9 +1,0 @@
-package com.ethiorental.backend.common.audit;
-
-public enum AuditAction {
-    REGISTER, LOGIN, LOGOUT, LOGIN_FAILED,
-    CREATE, UPDATE, DELETE,
-    APPROVE, REJECT, VERIFY,
-    ROLE_CHANGE, CONFIG_CHANGE,
-    PAYMENT_RECORDED, DOCUMENT_ACCESS, DATA_EXPORT
-}

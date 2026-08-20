@@ -21,7 +21,7 @@ public class EmployeeCredential {
     private GovernmentEmployee employee;
 
     @Column(nullable = false, unique = true)
-    private String username;
+    private String email;
 
     @Column(nullable = false)
     private String passwordHash;

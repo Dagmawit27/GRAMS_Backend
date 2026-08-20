@@ -9,9 +9,6 @@ import java.time.LocalDate;
 @Data
 public class RegisterCitizenRequest {
 
-    @NotNull(message = "Fayda ID is required")
-    private Long faydaId;
-
     @NotBlank(message = "First name is required")
     private String firstName;
 
@@ -37,6 +34,9 @@ public class RegisterCitizenRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+
+    /** Employer / organization (e.g. "CBE", "Ethio Telecom") */
+    private String worksOn;
 
     // LANDLORD, TENANT, or leave null for default CITIZEN
     private String rolePreference;

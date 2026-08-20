@@ -12,6 +12,9 @@ import com.ethiorental.backend.property.exception.PropertyNotFoundException;
 import com.ethiorental.backend.property.mapper.PropertyMapper;
 import com.ethiorental.backend.property.repository.*;
 import com.ethiorental.backend.property.storage.MinioStorageService;
+import com.ethiorental.backend.shared.audit.AuditAction;
+import com.ethiorental.backend.shared.audit.AuditService;
+import com.ethiorental.backend.shared.audit.Auditable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +32,13 @@ public class PropertyServiceImpl implements PropertyService {
     private final MinioStorageService storageService;
     private final PropertyVerificationRepository verificationRepository;
     private final EmployeeCredentialRepository employeeCredentialRepository;
+    private final AuditService auditService;
 
     // ── Register ──────────────────────────────────────────────────────────────
 
+    // SRS §5.10, NFR-034, BR-027 — log all property creation events
     @Override
+    @Auditable(action = AuditAction.CREATE, module = "PROPERTY")
     @Transactional
     public PropertyResponse registerProperty(PropertyRequest request,
                                               List<MultipartFile> images,
@@ -125,16 +131,18 @@ public class PropertyServiceImpl implements PropertyService {
                 .stream().map(mapper::toPropertyResponse).toList();
     }
 
+    // SRS §5.10, NFR-034, BR-027 — log property verification / status-change events
     @Override
     @Transactional
     public PropertyResponse updatePropertyStatus(UUID id, PropertyStatus newStatus, String remarks, String officerUsername) {
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new PropertyNotFoundException("Property not found: " + id));
 
-        GovernmentEmployee officer = employeeCredentialRepository.findByUsername(officerUsername)
+        GovernmentEmployee officer = employeeCredentialRepository.findByEmail(officerUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Officer not found"))
                 .getEmployee();
 
+        PropertyStatus previousStatus = property.getStatus();
         property.setStatus(newStatus);
         Property saved = propertyRepository.save(property);
 
@@ -146,6 +154,24 @@ public class PropertyServiceImpl implements PropertyService {
                 .remarks(remarks)
                 .build();
         verificationRepository.save(verification);
+
+        // Determine correct audit action based on the new status
+        AuditAction action = switch (newStatus) {
+            case VERIFIED, LISTED -> AuditAction.VERIFY;
+            case REJECTED -> AuditAction.REJECT;
+            case RENTED -> AuditAction.APPROVE;
+            default -> AuditAction.UPDATE;
+        };
+
+        // SRS NFR-034 — record the status transition in the immutable audit log
+        auditService.logStatusChange(
+                "PROPERTY",
+                saved.getId().toString(),
+                previousStatus.name(),
+                newStatus.name(),
+                action,
+                remarks
+        );
 
         return mapper.toPropertyResponse(saved);
     }

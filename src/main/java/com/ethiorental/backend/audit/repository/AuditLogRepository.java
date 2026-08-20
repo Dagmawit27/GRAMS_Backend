@@ -67,4 +67,14 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID>, JpaSp
     default void deleteAll() {
         throw new UnsupportedOperationException("Audit logs are append-only. Delete operations are strictly forbidden.");
     }
+
+    @Override
+    default void deleteAllInBatch() {
+        throw new UnsupportedOperationException("Audit logs are append-only. Delete operations are strictly forbidden.");
+    }
+
+    @Override
+    default void deleteAllInBatch(Iterable<AuditLog> entities) {
+        throw new UnsupportedOperationException("Audit logs are append-only. Delete operations are strictly forbidden.");
+    }
 }

@@ -11,8 +11,6 @@ import java.util.UUID;
 public interface CitizenRepository extends JpaRepository<Citizen, UUID> {
     Optional<Citizen> findByEmail(String email);
     Optional<Citizen> findByPhone(String phone);
-    Optional<Citizen> findByFaydaId(String faydaId);
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
-    boolean existsByFaydaId(String faydaId);
 }

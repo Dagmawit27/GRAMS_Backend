@@ -23,9 +23,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Try employee first (admins/officers login via employee credentials)
-        Optional<EmployeeCredential> empCred = employeeCredentialRepository.findByUsername(username);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // Try employee credentials first
+        Optional<EmployeeCredential> empCred = employeeCredentialRepository.findByEmail(email);
         if (empCred.isPresent()) {
             EmployeeCredential cred = empCred.get();
             List<SimpleGrantedAuthority> authorities = employeeRoleRepository
@@ -36,11 +36,11 @@ public class CustomUserDetailsService implements UserDetailsService {
                         return new SimpleGrantedAuthority(name.startsWith("ROLE_") ? name : "ROLE_" + name);
                     })
                     .toList();
-            return new User(cred.getUsername(), cred.getPasswordHash(), authorities);
+            return new User(cred.getEmail(), cred.getPasswordHash(), authorities);
         }
 
-        // Then try citizen
-        Optional<CitizenCredential> citizenCred = citizenCredentialRepository.findByUsername(username);
+        // Try citizen credentials
+        Optional<CitizenCredential> citizenCred = citizenCredentialRepository.findByEmail(email);
         if (citizenCred.isPresent()) {
             CitizenCredential cred = citizenCred.get();
             List<SimpleGrantedAuthority> authorities = citizenRoleRepository
@@ -51,13 +51,12 @@ public class CustomUserDetailsService implements UserDetailsService {
                         return new SimpleGrantedAuthority(name.startsWith("ROLE_") ? name : "ROLE_" + name);
                     })
                     .toList();
-            // Default CITIZEN role if none assigned
             if (authorities.isEmpty()) {
                 authorities = List.of(new SimpleGrantedAuthority("ROLE_CITIZEN"));
             }
-            return new User(cred.getUsername(), cred.getPasswordHash(), authorities);
+            return new User(cred.getEmail(), cred.getPasswordHash(), authorities);
         }
 
-        throw new UsernameNotFoundException("User not found: " + username);
+        throw new UsernameNotFoundException("User not found: " + email);
     }
 }

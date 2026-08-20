@@ -19,9 +19,6 @@ public class Citizen {
     @UuidGenerator
     private UUID id;
 
-    @Column(nullable = false, unique = true)
-    private String faydaId;
-
     @Column(nullable = false)
     private String firstName;
 
@@ -42,6 +39,9 @@ public class Citizen {
 
     @Column(nullable = false, unique = true)
     private String email;
+
+    /** Employer / organization the citizen works at (e.g. "CBE", "Ethio Telecom") */
+    private String worksOn;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

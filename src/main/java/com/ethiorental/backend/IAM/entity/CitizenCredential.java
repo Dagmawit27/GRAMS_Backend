@@ -21,7 +21,7 @@ public class CitizenCredential {
     private Citizen citizen;
 
     @Column(nullable = false, unique = true)
-    private String username;
+    private String email;
 
     @Column(nullable = false)
     private String passwordHash;

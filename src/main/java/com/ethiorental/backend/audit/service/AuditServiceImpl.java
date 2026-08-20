@@ -1,6 +1,7 @@
 package com.ethiorental.backend.audit.service;
 
 import com.ethiorental.backend.audit.entity.AuditLog;
+import com.ethiorental.backend.audit.exception.AuditWriteException;
 import com.ethiorental.backend.audit.repository.AuditLogRepository;
 import com.ethiorental.backend.shared.audit.AuditAction;
 import com.ethiorental.backend.shared.audit.AuditEventRequest;
@@ -12,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -26,7 +29,7 @@ public class AuditServiceImpl implements AuditService{
     private final AuditLogRepository repository;
 
     private static final Pattern FAYDA_ID_PATTERN = Pattern.compile("\\b\\d{12}\\b");
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?i)(password|pass|secret|otp|token)=[^&\\s]+");
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?i)(password|pass|secret|otp)=[^&\\s]+");
     private static final Pattern BEARER_PATTERN = Pattern.compile("(?i)Bearer\\s+[A-Za-z0-9._-]+");
 
     public AuditServiceImpl(AuditLogRepository repository) {
@@ -34,6 +37,7 @@ public class AuditServiceImpl implements AuditService{
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(AuditEventRequest event) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();

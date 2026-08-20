@@ -27,4 +27,5 @@ public class UserSummaryDto {
     private boolean governmentEmployee;
     private String employeeNumber;
     private String positionTitle;
+    private String worksOn;
 }

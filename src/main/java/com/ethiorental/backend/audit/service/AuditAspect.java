@@ -33,16 +33,21 @@ public class AuditAspect {
             throw ex;
         } finally {
             String entityId = extractEntityId(pjp, auditable.entityIdParam());
-            auditService.log(new AuditEventRequest(
-                    auditable.action(),
-                    auditable.module(),
-                    entityId,
-                    null,
-                    null,
-                    outcome,
-                    reason,
-                    null
-            ));
+            try {
+                auditService.log(new AuditEventRequest(
+                        auditable.action(),
+                        auditable.module(),
+                        entityId,
+                        null,
+                        null,
+                        outcome,
+                        reason,
+                        null
+                ));
+            } catch (Exception auditEx) {
+                // SRS fail-open: audit failures must never abort a business operation.
+                // AuditServiceImpl already logs the error; swallow here to protect the caller.
+            }
         }
     }
 

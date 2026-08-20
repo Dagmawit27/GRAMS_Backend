@@ -63,7 +63,7 @@ public class RoleInitializerService implements CommandLineRunner {
 
         // 3. Bootstrap initial System Administrator if none exists
         String adminEmail = "admin@grams.gov.et";
-        if (!employeeCredentialRepository.existsByUsername(adminEmail)) {
+        if (!employeeCredentialRepository.existsByEmail(adminEmail)) {
             GovernmentEmployee admin = GovernmentEmployee.builder()
                     .employeeNumber("EMP-0001")
                     .office(adminOffice)
@@ -80,7 +80,7 @@ public class RoleInitializerService implements CommandLineRunner {
 
             EmployeeCredential cred = EmployeeCredential.builder()
                     .employee(admin)
-                    .username(adminEmail)
+                    .email(adminEmail)
                     .passwordHash(passwordEncoder.encode("AdminPassword123!"))
                     .build();
             employeeCredentialRepository.save(cred);
@@ -105,7 +105,7 @@ public class RoleInitializerService implements CommandLineRunner {
 
         // 5. Bootstrap sample Woreda Officer
         String officerEmail = "officer@grams.gov.et";
-        if (!employeeCredentialRepository.existsByUsername(officerEmail)) {
+        if (!employeeCredentialRepository.existsByEmail(officerEmail)) {
             GovernmentEmployee officer = GovernmentEmployee.builder()
                     .employeeNumber("EMP-0002")
                     .office(woredaOffice)
@@ -122,7 +122,7 @@ public class RoleInitializerService implements CommandLineRunner {
 
             employeeCredentialRepository.save(EmployeeCredential.builder()
                     .employee(officer)
-                    .username(officerEmail)
+                    .email(officerEmail)
                     .passwordHash(passwordEncoder.encode("Officer@1234"))
                     .build());
 
@@ -135,7 +135,7 @@ public class RoleInitializerService implements CommandLineRunner {
 
         // 6. Bootstrap sample Woreda Supervisor
         String supervisorEmail = "supervisor@grams.gov.et";
-        if (!employeeCredentialRepository.existsByUsername(supervisorEmail)) {
+        if (!employeeCredentialRepository.existsByEmail(supervisorEmail)) {
             GovernmentEmployee supervisor = GovernmentEmployee.builder()
                     .employeeNumber("EMP-0003")
                     .office(woredaOffice)
@@ -152,7 +152,7 @@ public class RoleInitializerService implements CommandLineRunner {
 
             employeeCredentialRepository.save(EmployeeCredential.builder()
                     .employee(supervisor)
-                    .username(supervisorEmail)
+                    .email(supervisorEmail)
                     .passwordHash(passwordEncoder.encode("Supervisor@1234"))
                     .build());
 

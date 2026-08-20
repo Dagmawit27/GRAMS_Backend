@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    GRAMS SpotBugs Exclusion Filter
+    Excludes known-noisy categories for Spring Boot projects.
+    Does NOT disable SpotBugs entirely — only cuts false positives
+    from JPA entities, DTOs, and framework conventions.
+-->
+<FindBugsFilter>
+    <!--
+        EI_EXPOSE_REP / EI_EXPOSE_REP2:
+        "May expose internal representation by storing an externally mutable object."
+        This fires on every getter that returns a mutable collection and every constructor
+        that accepts one — standard pattern for JPA @Entity and @Data DTOs.
+        Excluding globally because Lombok @Getter/@Setter + @Builder make it impractical
+        to defensive-copy everywhere.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!--
+        MS_EXPOSE_REP:
+        "May expose internal static field." — fires on @ConfigurationProperties and
+        static constants. Not actionable at this stage.
+    -->
+    <Match>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+
+    <!--
+        SE_BAD_FIELD:
+        "Field is transient but not serializable" / "Non-serializable field in Serializable class."
+        Fires on Spring beans that happen to implement Serializable (or are in a Serializable
+        hierarchy) with fields like EntityManager, DataSource, etc. These are framework-managed
+        singletons, not meant to be serialized.
+    -->
+    <Match>
+        <Bug pattern="SE_BAD_FIELD"/>
+    </Match>
+
+    <!--
+        NM_METHOD_NAMING_CONVENTION / NM_CLASS_NAMING_CONVENTION:
+        Fires on classes/methods that don't follow strict Java naming but follow Spring Boot
+        conventions (e.g. config methods, CommandLineRunner implementations).
+    -->
+    <Match>
+        <Bug pattern="NM_METHOD_NAMING_CONVENTION,NM_CLASS_NAMING_CONVENTION"/>
+    </Match>
+
+    <!--
+        URF_UNREAD_FIELD:
+        Fields written by JPA/Lombok but seemingly "unread" to SpotBugs because the access
+        is via generated getters.
+    -->
+    <Match>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+
+    <!--
+        UUF_UNUSED_FIELD:
+        Same as above — fields used only via framework injection / reflection / Lombok.
+    -->
+    <Match>
+        <Bug pattern="UUF_UNUSED_FIELD"/>
+    </Match>
+
+    <!--
+        PREDICTABLE_RANDOM:
+        Fires on java.util.Random usage. Not a security concern for non-cryptographic
+        uses (e.g. UUID generation, test fixtures).
+    -->
+    <Match>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
+
+    <!--
+        DM_DEFAULT_ENCODING:
+        Fires on methods that don't explicitly specify charset. Common in internal
+        microservice communication where UTF-8 is the default.
+    -->
+    <Match>
+        <Bug pattern="DM_DEFAULT_ENCODING"/>
+    </Match>
+</FindBugsFilter>

@@ -10,6 +10,7 @@ import java.util.UUID;
 @Repository
 public interface GovernmentEmployeeRepository extends JpaRepository<GovernmentEmployee, UUID> {
     Optional<GovernmentEmployee> findByEmployeeNumber(String employeeNumber);
+    Optional<GovernmentEmployee> findByEmail(String email);
     boolean existsByEmployeeNumber(String employeeNumber);
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
