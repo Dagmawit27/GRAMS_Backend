@@ -84,7 +84,8 @@ public class SecurityConfig {
                         "TAX_OFFICER", "SYSTEM_ADMINISTRATOR", "AUDITOR")
                 // Authenticated users profile
                 .requestMatchers("/api/v1/users/**").authenticated()
-                // Properties — public GET for LISTED, everything else requires auth (method security handles roles)
+                // Properties — /my endpoint requires auth, other GETs are public for LISTED, everything else requires auth (method security handles roles)
+                .requestMatchers(HttpMethod.GET, "/api/v1/properties/my").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/v1/properties/**").permitAll()
                 .requestMatchers("/api/v1/properties/**").authenticated()
                 // Complaints — citizens submit/view own; officers view all (method security enforces roles)
