@@ -91,6 +91,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/complaints").hasRole("CITIZEN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/complaints/my").hasRole("CITIZEN")
                 .requestMatchers("/api/v1/complaints/**").authenticated()
+                // Reports — admin and auditor roles only (method security also enforces per-endpoint)
+                .requestMatchers("/api/v1/reports/**").hasAnyRole(
+                        "SYSTEM_ADMINISTRATOR", "CITY_ADMINISTRATOR", "AUDITOR")
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

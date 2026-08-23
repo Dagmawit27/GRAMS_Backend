@@ -2,13 +2,18 @@ package com.ethiorental.backend.property.mapper;
 
 import com.ethiorental.backend.property.dto.*;
 import com.ethiorental.backend.property.entity.*;
+import com.ethiorental.backend.property.storage.MinioStorageService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class PropertyMapper {
+
+    private final MinioStorageService storageService;
 
     public Address toAddressEntity(AddressRequest dto) {
         return Address.builder()
@@ -44,6 +49,7 @@ public class PropertyMapper {
                 p.getId(),
                 p.getPropertyCode(),
                 p.getPropertyType(),
+                p.getTitle(),
                 toAddressResponse(p.getAddress()),
                 p.getHouseNumber(),
                 p.getFloorNumber(),
@@ -53,6 +59,13 @@ public class PropertyMapper {
                 p.getMonthlyRent(),
                 p.getFurnishingStatus(),
                 p.getDescription(),
+                p.getOwnershipType(),
+                p.getSpecificLandmark(),
+                p.getCadastralParcelId(),
+                p.getTitleDeedNumber(),
+                p.getSecurityDepositMonths(),
+                p.getMinLeasePeriod(),
+                p.getAvailableFrom(),
                 p.getStatus(),
                 p.getLandlord().getId(),
                 images,
@@ -62,15 +75,19 @@ public class PropertyMapper {
     }
 
     public PropertyImageResponse toImageResponse(PropertyImage img) {
+        // Resolve MinIO object path → presigned URL so the browser can load it directly
+        String resolvedUrl = storageService.resolveImageUrl(img.getImageUrl());
         return new PropertyImageResponse(
-                img.getId(), img.getImageUrl(), img.isCover(), img.getUploadedAt()
+                img.getId(), resolvedUrl, img.isCover(), img.getUploadedAt()
         );
     }
 
     public OwnershipDocumentResponse toDocResponse(OwnershipDocument doc) {
+        // Resolve MinIO object path → presigned URL for document downloads
+        String resolvedPath = storageService.resolveDocumentUrl(doc.getFilePath());
         return new OwnershipDocumentResponse(
                 doc.getId(), doc.getDocumentNumber(), doc.getDocumentType(),
-                doc.getFilePath(), doc.getIssueDate(), doc.getExpiryDate()
+                resolvedPath, doc.getIssueDate(), doc.getExpiryDate()
         );
     }
 }

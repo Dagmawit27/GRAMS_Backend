@@ -46,7 +46,7 @@ public class PropertyServiceImpl implements PropertyService {
                                               String landlordEmail) {
 
         Citizen landlord = citizenRepository.findByEmail(landlordEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Landlord not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found for email: " + landlordEmail));
 
         Address address = mapper.toAddressEntity(request.address());
 
@@ -55,6 +55,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .address(address)
                 .propertyCode(generatePropertyCode())
                 .propertyType(request.propertyType())
+                .title(request.title())
                 .houseNumber(request.houseNumber())
                 .floorNumber(request.floorNumber())
                 .bedroomCount(request.bedroomCount())
@@ -63,6 +64,13 @@ public class PropertyServiceImpl implements PropertyService {
                 .monthlyRent(request.monthlyRent())
                 .furnishingStatus(request.furnishingStatus())
                 .description(request.description())
+                .ownershipType(request.ownershipType())
+                .specificLandmark(request.specificLandmark())
+                .cadastralParcelId(request.cadastralParcelId())
+                .titleDeedNumber(request.titleDeedNumber())
+                .securityDepositMonths(request.securityDepositMonths())
+                .minLeasePeriod(request.minLeasePeriod())
+                .availableFrom(request.availableFrom())
                 .status(PropertyStatus.PENDING)
                 .images(new ArrayList<>())
                 .ownershipDocuments(new ArrayList<>())
@@ -72,10 +80,10 @@ public class PropertyServiceImpl implements PropertyService {
         Property saved = propertyRepository.save(property);
 
         // Upload images to MinIO
-        if (images != null) {
+        if (images != null && !images.isEmpty()) {
             boolean firstIsCover = true;
             for (MultipartFile file : images) {
-                if (file.isEmpty()) continue;
+                if (file == null || file.isEmpty()) continue;
                 String objectName = storageService.uploadPropertyImage(file, saved.getId());
                 PropertyImage img = PropertyImage.builder()
                         .property(saved)
@@ -88,17 +96,24 @@ public class PropertyServiceImpl implements PropertyService {
         }
 
         // Upload ownership documents to MinIO
-        if (ownershipDocuments != null) {
+        if (ownershipDocuments != null && !ownershipDocuments.isEmpty()) {
+            int docIndex = 1;
             for (MultipartFile file : ownershipDocuments) {
-                if (file.isEmpty()) continue;
+                if (file == null || file.isEmpty()) continue;
                 String objectName = storageService.uploadOwnershipDocument(file, saved.getId());
+                String baseDocNumber = (request.titleDeedNumber() != null && !request.titleDeedNumber().isBlank())
+                        ? request.titleDeedNumber()
+                        : "DOC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                String uniqueDocNumber = (docIndex == 1) ? baseDocNumber : baseDocNumber + "-" + docIndex;
+
                 OwnershipDocument doc = OwnershipDocument.builder()
                         .property(saved)
-                        .documentNumber(UUID.randomUUID().toString())
+                        .documentNumber(uniqueDocNumber)
                         .documentType(detectDocumentType(file.getOriginalFilename()))
                         .filePath(objectName)
                         .build();
                 saved.getOwnershipDocuments().add(doc);
+                docIndex++;
             }
         }
 

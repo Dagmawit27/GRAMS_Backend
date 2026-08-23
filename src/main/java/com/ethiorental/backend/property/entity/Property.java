@@ -31,6 +31,9 @@ public class Property {
     @Column(nullable = false, unique = true)
     private String propertyCode;
 
+    /** Human-readable listing title (e.g. "Bole Atlas Luxury Villa") */
+    private String title;
+
     @Column(nullable = false)
     private String propertyType;
 
@@ -51,6 +54,20 @@ public class Property {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    private String ownershipType;
+
+    private String specificLandmark;
+
+    private String cadastralParcelId;
+
+    private String titleDeedNumber;
+
+    private Integer securityDepositMonths;
+
+    private String minLeasePeriod;
+
+    private String availableFrom;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

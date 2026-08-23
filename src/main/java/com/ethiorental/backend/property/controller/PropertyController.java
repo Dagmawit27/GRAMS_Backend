@@ -29,11 +29,11 @@ public class PropertyController {
      * Accepts multipart/form-data with JSON part + file parts.
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('LANDLORD')")
+    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
     public ResponseEntity<PropertyResponse> registerProperty(
             @RequestPart("property") @Valid PropertyRequest request,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @RequestPart(value = "documents", required = false) List<MultipartFile> ownershipDocuments,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images,
+            @RequestParam(value = "documents", required = false) List<MultipartFile> ownershipDocuments,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         PropertyResponse response = propertyService.registerProperty(
@@ -45,7 +45,7 @@ public class PropertyController {
      * Get all properties belonging to the authenticated landlord.
      */
     @GetMapping("/my")
-    @PreAuthorize("hasRole('LANDLORD')")
+    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
     public ResponseEntity<List<PropertyResponse>> getMyProperties(
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(propertyService.getMyProperties(userDetails.getUsername()));

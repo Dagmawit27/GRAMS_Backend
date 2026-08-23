@@ -16,7 +16,11 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     Page<Notification> findByRecipientUserIdOrderByCreatedAtDesc(String recipientUserId, Pageable pageable);
 
+    /** Per-user unread count — used by the notification bell. */
     long countByRecipientUserIdAndReadFalse(String recipientUserId);
+
+    /** System-wide unread count — used by admin reporting dashboard. */
+    long countByReadFalse();
 
     @Modifying
     @Query("UPDATE Notification n SET n.read = true WHERE n.id = :id AND n.recipientUserId = :userId")
@@ -26,3 +30,4 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Query("UPDATE Notification n SET n.read = true WHERE n.recipientUserId = :userId AND n.read = false")
     int markAllAsRead(@Param("userId") String userId);
 }
+
