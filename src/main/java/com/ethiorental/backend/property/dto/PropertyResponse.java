@@ -30,7 +30,11 @@ public record PropertyResponse(
         String availableFrom,
         PropertyStatus status,
         UUID landlordId,
+        String landlordName,
+        String landlordPhone,
+        String landlordEmail,
         List<PropertyImageResponse> images,
         List<OwnershipDocumentResponse> ownershipDocuments,
+        List<PropertyUnitResponse> units,
         LocalDateTime createdAt
 ) {}

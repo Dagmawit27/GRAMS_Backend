@@ -39,12 +39,21 @@ public class MinioStorageService {
 
     // ── Delete ────────────────────────────────────────────────────────────────
 
+    public void deletePropertyImage(String objectName) {
+        deleteObject(imageBucket, objectName);
+    }
+
+    public void deleteOwnershipDocument(String objectName) {
+        deleteObject(docBucket, objectName);
+    }
+
     public void deleteObject(String bucket, String objectName) {
         try {
             minioClient.removeObject(RemoveObjectArgs.builder()
                     .bucket(bucket)
                     .object(objectName)
                     .build());
+            log.info("Successfully deleted object from MinIO: bucket={}, object={}", bucket, objectName);
         } catch (Exception e) {
             log.error("Failed to delete object from MinIO: bucket={}, object={}", bucket, objectName, e);
             throw new RuntimeException("Failed to delete object: " + objectName, e);

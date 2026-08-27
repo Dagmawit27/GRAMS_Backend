@@ -45,6 +45,10 @@ public class PropertyMapper {
                 ? Collections.emptyList()
                 : p.getOwnershipDocuments().stream().map(this::toDocResponse).toList();
 
+        List<PropertyUnitResponse> units = p.getUnits() == null
+                ? Collections.emptyList()
+                : p.getUnits().stream().map(this::toUnitResponse).toList();
+
         return new PropertyResponse(
                 p.getId(),
                 p.getPropertyCode(),
@@ -67,9 +71,13 @@ public class PropertyMapper {
                 p.getMinLeasePeriod(),
                 p.getAvailableFrom(),
                 p.getStatus(),
-                p.getLandlord().getId(),
+                p.getLandlord() != null ? p.getLandlord().getId() : null,
+                p.getLandlord() != null ? p.getLandlord().getFirstName() + " " + p.getLandlord().getLastName() : null,
+                p.getLandlord() != null ? p.getLandlord().getPhone() : null,
+                p.getLandlord() != null ? p.getLandlord().getEmail() : null,
                 images,
                 docs,
+                units,
                 p.getCreatedAt()
         );
     }
@@ -88,6 +96,29 @@ public class PropertyMapper {
         return new OwnershipDocumentResponse(
                 doc.getId(), doc.getDocumentNumber(), doc.getDocumentType(),
                 resolvedPath, doc.getIssueDate(), doc.getExpiryDate()
+        );
+    }
+
+    public PropertyUnitResponse toUnitResponse(PropertyUnit unit) {
+        return new PropertyUnitResponse(
+                unit.getId(),
+                unit.getProperty() != null ? unit.getProperty().getId() : null,
+                unit.getUnitCode(),
+                unit.getUnitName(),
+                unit.getUnitType(),
+                unit.getAreaSqMeter(),
+                unit.getStatus(),
+                unit.getRentAmount(),
+                unit.getTenantName(),
+                unit.getFloorLevel(),
+                unit.getCategory(),
+                unit.getShopNumber(),
+                unit.getSubmeter(),
+                unit.getWaterSupply(),
+                unit.getFrontage(),
+                unit.getDescription(),
+                unit.getCreatedAt(),
+                unit.getUpdatedAt()
         );
     }
 }

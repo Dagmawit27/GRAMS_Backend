@@ -22,6 +22,7 @@ public class Property {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "landlord_id", nullable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Citizen landlord;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -61,6 +62,7 @@ public class Property {
 
     private String cadastralParcelId;
 
+    @Column(unique = true)
     private String titleDeedNumber;
 
     private Integer securityDepositMonths;
@@ -78,6 +80,9 @@ public class Property {
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PropertyImage> images;
+
+    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PropertyUnit> units;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

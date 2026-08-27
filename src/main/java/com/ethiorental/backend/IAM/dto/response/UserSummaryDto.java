@@ -28,4 +28,7 @@ public class UserSummaryDto {
     private String employeeNumber;
     private String positionTitle;
     private String worksOn;
+    /** Jurisdiction — only populated for GOVERNMENT_EMPLOYEE */
+    private String subCity;
+    private String woreda;
 }

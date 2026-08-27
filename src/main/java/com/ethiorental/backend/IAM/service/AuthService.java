@@ -12,6 +12,7 @@ import com.ethiorental.backend.IAM.enums.EmployeeStatus;
 import com.ethiorental.backend.IAM.repository.*;
 import com.ethiorental.backend.IAM.security.CustomUserDetailsService;
 import com.ethiorental.backend.IAM.security.JwtUtils;
+import com.ethiorental.backend.location.repository.SubCityWoredaRepository;
 import com.ethiorental.backend.shared.audit.AuditAction;
 import com.ethiorental.backend.shared.audit.AuditEventRequest;
 import com.ethiorental.backend.shared.audit.AuditOutcome;
@@ -43,6 +44,7 @@ public class AuthService {
     private final EmployeeRoleRepository employeeRoleRepository;
     private final RoleRepository roleRepository;
     private final OfficeRepository officeRepository;
+    private final SubCityWoredaRepository subCityWoredaRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
@@ -235,6 +237,14 @@ public class AuthService {
     @Auditable(action = AuditAction.REGISTER, module = "IAM")
     @Transactional
     public AuthResponse registerEmployee(RegisterEmployeeRequest req) {
+        // Validate that the sub-city + woreda exists in the reference table
+        if (!subCityWoredaRepository.existsBySubCityIgnoreCaseAndWoreda(req.getSubCity(), req.getWoreda())) {
+            throw new IllegalArgumentException(
+                "Invalid jurisdiction: '" + req.getSubCity() + "' Woreda " + req.getWoreda()
+                + " is not a recognised Addis Ababa sub-city/woreda combination."
+            );
+        }
+
         if (employeeRepository.existsByEmployeeNumber(req.getEmployeeNumber()))
             throw new IllegalArgumentException("Employee number already registered.");
         if (employeeRepository.existsByEmail(req.getEmail()))
@@ -244,9 +254,17 @@ public class AuthService {
         if (employeeCredentialRepository.existsByEmail(req.getEmail()))
             throw new IllegalArgumentException("Username already taken.");
 
-        // Require a valid office
-        Office office = officeRepository.findById(req.getOfficeId())
-                .orElseThrow(() -> new IllegalArgumentException("Office not found: " + req.getOfficeId()));
+        // Resolve or create the office for this sub-city + woreda
+        Office office = officeRepository
+                .findBySubCityIgnoreCaseAndWoreda(req.getSubCity(), req.getWoreda())
+                .orElseGet(() -> officeRepository.save(
+                        Office.builder()
+                                .officeName(req.getSubCity() + " Sub-City Woreda " + req.getWoreda() + " Housing Desk")
+                                .officeType(req.getOfficeType() != null ? req.getOfficeType() : "WOREDA_OFFICE")
+                                .subCity(req.getSubCity())
+                                .woreda(req.getWoreda())
+                                .build()
+                ));
 
         GovernmentEmployee employee = GovernmentEmployee.builder()
                 .employeeNumber(req.getEmployeeNumber())
@@ -358,6 +376,8 @@ public class AuthService {
     }
 
     private UserSummaryDto buildEmployeeSummary(GovernmentEmployee e, List<String> roles) {
+        String subCity = e.getOffice() != null ? e.getOffice().getSubCity() : null;
+        String woreda  = e.getOffice() != null ? e.getOffice().getWoreda()  : null;
         return UserSummaryDto.builder()
                 .id(e.getId())
                 .firstName(e.getFirstName())
@@ -372,6 +392,8 @@ public class AuthService {
                 .governmentEmployee(true)
                 .employeeNumber(e.getEmployeeNumber())
                 .positionTitle(e.getPosition())
+                .subCity(subCity)
+                .woreda(woreda)
                 .build();
     }
 

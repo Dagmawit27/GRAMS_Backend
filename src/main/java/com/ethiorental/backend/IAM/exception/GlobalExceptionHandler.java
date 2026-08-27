@@ -4,6 +4,7 @@ import com.ethiorental.backend.complaint.exception.ComplaintAttachmentNotFoundEx
 import com.ethiorental.backend.complaint.exception.ComplaintNotFoundException;
 import com.ethiorental.backend.complaint.exception.ComplaintStatusTransitionException;
 import com.ethiorental.backend.property.exception.PropertyNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -139,6 +140,26 @@ public class GlobalExceptionHandler {
         // Expose first error in "message" so frontend api.ts json.message works
         errors.values().stream().findFirst().ifPresent(m -> body.put("message", m));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.CONFLICT.value());
+        body.put("error", "Conflict");
+        
+        // Check if it's a duplicate title deed number error
+        String message = ex.getMessage();
+        if (message != null && message.contains("title_deed_number")) {
+            body.put("message", "This Title Deed ID is already registered in the system. Please use a unique ID.");
+        } else if (message != null && message.contains("property_code")) {
+            body.put("message", "A property with this code already exists.");
+        } else {
+            body.put("message", "A record with this information already exists in the system.");
+        }
+        
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @ExceptionHandler(Exception.class)

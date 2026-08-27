@@ -5,16 +5,12 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.util.List;
-import java.util.UUID;
 
 @Data
 public class RegisterEmployeeRequest {
 
     @NotBlank(message = "Employee number is required")
     private String employeeNumber;
-
-    @NotNull(message = "Office ID is required")
-    private UUID officeId;
 
     @NotBlank(message = "First name is required")
     private String firstName;
@@ -37,6 +33,17 @@ public class RegisterEmployeeRequest {
 
     @NotBlank(message = "Position title is required")
     private String positionTitle;
+
+    /** Sub-city the employee's office belongs to (e.g. "Akaky Kaliti") */
+    @NotBlank(message = "Sub-city is required")
+    private String subCity;
+
+    /** Woreda number (e.g. "03") */
+    @NotBlank(message = "Woreda is required")
+    private String woreda;
+
+    @NotBlank(message = "Office type is required")
+    private String officeType;
 
     // Optional: if not provided, default password is "Change@{employeeNumber}"
     @Size(min = 6, message = "Password must be at least 6 characters")

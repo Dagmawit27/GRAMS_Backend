@@ -21,6 +21,14 @@ public class Office {
     @Column(nullable = false)
     private String officeType;
 
+    /** Sub-city this office serves (e.g. "Akaky Kaliti") */
+    @Column(nullable = false)
+    private String subCity;
+
+    /** Woreda number this office is responsible for (e.g. "03") */
+    @Column(nullable = false)
+    private String woreda;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_office_id")
     private Office parentOffice;
