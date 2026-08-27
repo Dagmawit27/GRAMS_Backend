@@ -8,9 +8,11 @@ import com.ethiorental.backend.IAM.repository.EmployeeRoleRepository;
 import com.ethiorental.backend.location.repository.SubCityWoredaRepository;
 import com.ethiorental.backend.property.dto.PropertyRequest;
 import com.ethiorental.backend.property.dto.PropertyResponse;
+import com.ethiorental.backend.property.dto.PropertyUnitRequest;
 import com.ethiorental.backend.property.dto.PropertyUnitResponse;
 import com.ethiorental.backend.property.entity.*;
 import com.ethiorental.backend.property.enums.PropertyStatus;
+import com.ethiorental.backend.property.enums.UnitStatus;
 import com.ethiorental.backend.property.exception.PropertyNotFoundException;
 import com.ethiorental.backend.property.mapper.PropertyMapper;
 import com.ethiorental.backend.property.repository.*;
@@ -91,6 +93,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .status(PropertyStatus.PENDING)
                 .images(new ArrayList<>())
                 .ownershipDocuments(new ArrayList<>())
+                .units(new ArrayList<>())
                 .build();
 
         // Save first to get the generated id for MinIO paths
@@ -131,6 +134,31 @@ public class PropertyServiceImpl implements PropertyService {
                         .build();
                 saved.getOwnershipDocuments().add(doc);
                 docIndex++;
+            }
+        }
+
+        // Process property units (for shopping malls)
+        if (request.units() != null && !request.units().isEmpty()) {
+            for (PropertyUnitRequest unitRequest : request.units()) {
+                PropertyUnit unit = PropertyUnit.builder()
+                        .property(saved)
+                        .unitCode(unitRequest.unitCode())
+                        .unitName(unitRequest.unitName())
+                        .unitType(unitRequest.unitType())
+                        .areaSqMeter(unitRequest.areaSqMeter())
+                        .status(unitRequest.status() != null ? 
+                            UnitStatus.valueOf(unitRequest.status().toUpperCase()) : UnitStatus.AVAILABLE)
+                        .rentAmount(unitRequest.rentAmount())
+                        .tenantName(unitRequest.tenantName())
+                        .floorLevel(unitRequest.floorLevel())
+                        .category(unitRequest.category())
+                        .shopNumber(unitRequest.shopNumber())
+                        .submeter(unitRequest.submeter() != null ? unitRequest.submeter() : false)
+                        .waterSupply(unitRequest.waterSupply() != null ? unitRequest.waterSupply() : false)
+                        .frontage(unitRequest.frontage())
+                        .description(unitRequest.description())
+                        .build();
+                saved.getUnits().add(unit);
             }
         }
 

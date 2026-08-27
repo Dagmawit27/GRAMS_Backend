@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record PropertyRequest(
         @NotBlank String propertyType,
@@ -23,5 +24,6 @@ public record PropertyRequest(
         String titleDeedNumber,
         Integer securityDepositMonths,
         String minLeasePeriod,
-        String availableFrom
+        String availableFrom,
+        List<PropertyUnitRequest> units
 ) {}
