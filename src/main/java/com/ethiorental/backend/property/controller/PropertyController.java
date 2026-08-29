@@ -61,6 +61,15 @@ public class PropertyController {
     }
 
     /**
+     * Get a single property by property code — any authenticated user.
+     */
+    @GetMapping("/code/{propertyCode}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PropertyResponse> getPropertyByCode(@PathVariable String propertyCode) {
+        return ResponseEntity.ok(propertyService.getPropertyByCode(propertyCode));
+    }
+
+    /**
      * Officer/Supervisor: get a single property by id for review purposes.
      */
     @GetMapping("/officer/detail/{id}")

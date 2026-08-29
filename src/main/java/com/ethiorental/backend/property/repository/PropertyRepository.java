@@ -5,10 +5,12 @@ import com.ethiorental.backend.property.entity.Property;
 import com.ethiorental.backend.property.enums.PropertyStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.UUID;
 
+@Repository
 public interface PropertyRepository extends JpaRepository<Property, UUID> {
     @Query("SELECT p FROM Property p LEFT JOIN FETCH p.landlord LEFT JOIN FETCH p.address WHERE p.landlord = :landlord")
     List<Property> findByLandlord(@org.springframework.data.repository.query.Param("landlord") Citizen landlord);
@@ -29,6 +31,10 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
     /** Find property by ID with landlord and address eagerly loaded to avoid lazy loading exceptions. */
     @Query("SELECT p FROM Property p LEFT JOIN FETCH p.landlord LEFT JOIN FETCH p.address WHERE p.id = :id")
     Property findWithDetailsById(@org.springframework.data.repository.query.Param("id") UUID id);
+
+    /** Find property by property code with landlord and address eagerly loaded. */
+    @Query("SELECT p FROM Property p LEFT JOIN FETCH p.landlord LEFT JOIN FETCH p.address WHERE UPPER(p.propertyCode) = UPPER(:propertyCode)")
+    Property findByPropertyCode(@org.springframework.data.repository.query.Param("propertyCode") String propertyCode);
 
     // ── Reporting queries ─────────────────────────────────────────────────────
     long countByStatus(PropertyStatus status);

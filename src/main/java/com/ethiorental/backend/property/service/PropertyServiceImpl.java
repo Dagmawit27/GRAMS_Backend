@@ -17,7 +17,6 @@ import com.ethiorental.backend.property.exception.PropertyNotFoundException;
 import com.ethiorental.backend.property.mapper.PropertyMapper;
 import com.ethiorental.backend.property.repository.*;
 import com.ethiorental.backend.property.storage.MinioStorageService;
-import com.ethiorental.backend.location.repository.SubCityWoredaRepository;
 import com.ethiorental.backend.shared.audit.AuditAction;
 import com.ethiorental.backend.shared.audit.AuditService;
 import com.ethiorental.backend.shared.audit.Auditable;
@@ -142,17 +141,16 @@ public class PropertyServiceImpl implements PropertyService {
             for (PropertyUnitRequest unitRequest : request.units()) {
                 PropertyUnit unit = PropertyUnit.builder()
                         .property(saved)
-                        .unitCode(unitRequest.unitCode())
+                        .unitCode(generateUnitCode())
                         .unitName(unitRequest.unitName())
                         .unitType(unitRequest.unitType())
                         .areaSqMeter(unitRequest.areaSqMeter())
-                        .status(unitRequest.status() != null ? 
+                        .status(unitRequest.status() != null ?
                             UnitStatus.valueOf(unitRequest.status().toUpperCase()) : UnitStatus.AVAILABLE)
                         .rentAmount(unitRequest.rentAmount())
                         .tenantName(unitRequest.tenantName())
                         .floorLevel(unitRequest.floorLevel())
                         .category(unitRequest.category())
-                        .shopNumber(unitRequest.shopNumber())
                         .submeter(unitRequest.submeter() != null ? unitRequest.submeter() : false)
                         .waterSupply(unitRequest.waterSupply() != null ? unitRequest.waterSupply() : false)
                         .frontage(unitRequest.frontage())
@@ -182,6 +180,16 @@ public class PropertyServiceImpl implements PropertyService {
         Property property = propertyRepository.findWithDetailsById(id);
         if (property == null) {
             throw new PropertyNotFoundException("Property not found: " + id);
+        }
+        return mapper.toPropertyResponse(property);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PropertyResponse getPropertyByCode(String propertyCode) {
+        Property property = propertyRepository.findByPropertyCode(propertyCode);
+        if (property == null) {
+            throw new PropertyNotFoundException("Property not found with code: " + propertyCode);
         }
         return mapper.toPropertyResponse(property);
     }
@@ -434,6 +442,10 @@ public class PropertyServiceImpl implements PropertyService {
         return "PROP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
+    private String generateUnitCode() {
+        return "UNIT-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+    }
+
     private String detectDocumentType(String filename) {
         if (filename == null) return "DOCUMENT";
         String lower = filename.toLowerCase();
@@ -489,7 +501,6 @@ public class PropertyServiceImpl implements PropertyService {
                     .rentAmount(unitDto.rentAmount())
                     .floorLevel(unitDto.floorLevel())
                     .category(unitDto.category())
-                    .shopNumber(unitDto.shopNumber())
                     .submeter(unitDto.submeter())
                     .waterSupply(unitDto.waterSupply())
                     .frontage(unitDto.frontage())

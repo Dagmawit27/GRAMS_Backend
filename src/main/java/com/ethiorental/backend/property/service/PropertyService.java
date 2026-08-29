@@ -23,6 +23,9 @@ public interface PropertyService {
     /** Get a single property by id (owner or officer). */
     PropertyResponse getPropertyById(UUID id);
 
+    /** Get a single property by property code (owner or officer). */
+    PropertyResponse getPropertyByCode(String propertyCode);
+
     /** Get all properties filtered by status (public/officer facing). */
     List<PropertyResponse> getPropertiesByStatus(PropertyStatus status);
 

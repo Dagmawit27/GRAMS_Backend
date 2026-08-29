@@ -112,7 +112,6 @@ public class PropertyMapper {
                 unit.getTenantName(),
                 unit.getFloorLevel(),
                 unit.getCategory(),
-                unit.getShopNumber(),
                 unit.getSubmeter(),
                 unit.getWaterSupply(),
                 unit.getFrontage(),

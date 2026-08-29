@@ -14,7 +14,6 @@ public record PropertyUnitRequest(
         String tenantName,
         String floorLevel,
         String category,
-        String shopNumber,
         Boolean submeter,
         Boolean waterSupply,
         String frontage,

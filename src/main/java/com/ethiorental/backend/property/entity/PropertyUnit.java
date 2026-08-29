@@ -22,7 +22,7 @@ public class PropertyUnit {
     @JoinColumn(name = "property_id", nullable = false)
     private Property property;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String unitCode;
 
     @Column(nullable = false)
@@ -45,8 +45,6 @@ public class PropertyUnit {
     private String floorLevel;
 
     private String category;
-
-    private String shopNumber;
 
     private Boolean submeter;
 

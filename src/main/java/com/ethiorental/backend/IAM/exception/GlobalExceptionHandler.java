@@ -152,7 +152,7 @@ public class GlobalExceptionHandler {
         // Check if it's a duplicate title deed number error
         String message = ex.getMessage();
         if (message != null && message.contains("title_deed_number")) {
-            body.put("message", "This Title Deed ID is already registered in the system. Please use a unique ID.");
+            body.put("message", "This Title Deed Number is already registered in the system. Please enter a different Title Deed Number.");
         } else if (message != null && message.contains("property_code")) {
             body.put("message", "A property with this code already exists.");
         } else {

@@ -18,7 +18,6 @@ public record PropertyUnitResponse(
         String tenantName,
         String floorLevel,
         String category,
-        String shopNumber,
         Boolean submeter,
         Boolean waterSupply,
         String frontage,
