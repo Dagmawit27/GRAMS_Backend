@@ -4,6 +4,7 @@ import com.ethiorental.backend.property.enums.UnitStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record PropertyUnitResponse(
@@ -22,6 +23,8 @@ public record PropertyUnitResponse(
         Boolean waterSupply,
         String frontage,
         String description,
+        String propertyImage,
+        List<String> propertyImages,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

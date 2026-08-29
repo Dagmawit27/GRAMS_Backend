@@ -14,6 +14,7 @@ import com.ethiorental.backend.property.enums.PropertyStatus;
 import com.ethiorental.backend.property.enums.UnitStatus;
 import com.ethiorental.backend.property.repository.PropertyRepository;
 import com.ethiorental.backend.property.repository.PropertyUnitRepository;
+import com.ethiorental.backend.property.storage.MinioStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,39 +31,40 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     private final CitizenRepository citizenRepository;
     private final PropertyRepository propertyRepository;
     private final PropertyUnitRepository propertyUnitRepository;
+    private final MinioStorageService storageService;
 
     @Override
     @Transactional
     public LeaseRequestResponse submitLeaseRequest(LeaseRequestRequest request, String applicantEmail) {
         Citizen applicant = citizenRepository.findByEmail(applicantEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Applicant account not found for email: " + applicantEmail));
+                .orElseThrow(() -> new IllegalArgumentException("User account not found. Please ensure you are logged in with a valid account."));
 
         Property property = propertyRepository.findById(request.propertyId())
-                .orElseThrow(() -> new IllegalArgumentException("Property not found: " + request.propertyId()));
+                .orElseThrow(() -> new IllegalArgumentException("Property not found. The property ID provided is invalid."));
 
         if (property.getStatus() != PropertyStatus.LISTED) {
-            throw new IllegalStateException("Property is not available for lease. Current status: " + property.getStatus());
+            throw new IllegalStateException("This property is not currently available for lease. Property status: " + property.getStatus() + ". Please contact the landlord for more information.");
         }
 
         PropertyUnit unit = null;
         if (request.unitId() != null) {
             unit = propertyUnitRepository.findById(request.unitId())
-                    .orElseThrow(() -> new IllegalArgumentException("Unit not found: " + request.unitId()));
+                    .orElseThrow(() -> new IllegalArgumentException("Unit not found. The unit ID provided is invalid."));
             
             if (unit.getStatus() != UnitStatus.AVAILABLE) {
-                throw new IllegalStateException("Unit is not available for lease. Current status: " + unit.getStatus());
+                throw new IllegalStateException("This unit is not currently available for lease. Unit status: " + unit.getStatus() + ". Please select a different unit.");
             }
 
             // Check if applicant already has a pending request for this unit
             leaseRequestRepository.findByUnitIdAndApplicantId(request.unitId(), applicant.getId())
                     .ifPresent(lr -> {
-                        throw new IllegalStateException("You already have a pending lease request for this unit");
+                        throw new IllegalStateException("You already have a pending lease request for this unit. Please wait for the landlord's response before submitting another request.");
                     });
         } else {
             // Check if applicant already has a pending request for this property
             leaseRequestRepository.findByPropertyIdAndApplicantId(request.propertyId(), applicant.getId())
                     .ifPresent(lr -> {
-                        throw new IllegalStateException("You already have a pending lease request for this property");
+                        throw new IllegalStateException("You already have a pending lease request for this property. Please wait for the landlord's response before submitting another request.");
                     });
         }
 
@@ -85,7 +87,7 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     @Override
     public List<LeaseRequestResponse> getMyLeaseRequests(String applicantEmail) {
         Citizen applicant = citizenRepository.findByEmail(applicantEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Applicant account not found for email: " + applicantEmail));
+                .orElseThrow(() -> new IllegalArgumentException("User account not found. Please ensure you are logged in with a valid account."));
         
         List<LeaseRequest> requests = leaseRequestRepository.findByApplicantId(applicant.getId());
         return requests.stream().map(this::toResponse).toList();
@@ -94,7 +96,7 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     @Override
     public List<LeaseRequestResponse> getLandlordLeaseRequests(String landlordEmail) {
         Citizen landlord = citizenRepository.findByEmail(landlordEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found for email: " + landlordEmail));
+                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found. Please ensure you are logged in with a valid account."));
         
         List<LeaseRequest> requests = leaseRequestRepository.findByLandlordId(landlord.getId());
         return requests.stream().map(this::toResponse).toList();
@@ -103,7 +105,7 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     @Override
     public LeaseRequestResponse getLeaseRequestById(UUID id) {
         LeaseRequest leaseRequest = leaseRequestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Lease request not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request ID provided is invalid."));
         return toResponse(leaseRequest);
     }
 
@@ -111,17 +113,17 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     @Transactional
     public LeaseRequestResponse updateLeaseRequestStatus(UUID id, LeaseStatusUpdateRequest request, String landlordEmail) {
         LeaseRequest leaseRequest = leaseRequestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Lease request not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request ID provided is invalid."));
 
         Citizen landlord = citizenRepository.findByEmail(landlordEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found for email: " + landlordEmail));
+                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found. Please ensure you are logged in with a valid account."));
 
         if (!leaseRequest.getLandlord().getId().equals(landlord.getId())) {
-            throw new IllegalArgumentException("You can only update lease requests for your own properties");
+            throw new IllegalArgumentException("Access denied. You can only update lease requests for your own properties.");
         }
 
         if (leaseRequest.getStatus() != LeaseRequestStatus.PENDING) {
-            throw new IllegalStateException("Can only update pending lease requests. Current status: " + leaseRequest.getStatus());
+            throw new IllegalStateException("This lease request cannot be updated. Current status: " + leaseRequest.getStatus() + ". Only pending requests can be modified.");
         }
 
         leaseRequest.setStatus(request.newStatus());
@@ -136,17 +138,17 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     @Transactional
     public void cancelLeaseRequest(UUID id, String applicantEmail) {
         LeaseRequest leaseRequest = leaseRequestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Lease request not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request ID provided is invalid."));
 
         Citizen applicant = citizenRepository.findByEmail(applicantEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Applicant account not found for email: " + applicantEmail));
+                .orElseThrow(() -> new IllegalArgumentException("User account not found. Please ensure you are logged in with a valid account."));
 
         if (!leaseRequest.getApplicant().getId().equals(applicant.getId())) {
-            throw new IllegalArgumentException("You can only cancel your own lease requests");
+            throw new IllegalArgumentException("Access denied. You can only cancel your own lease requests.");
         }
 
         if (leaseRequest.getStatus() != LeaseRequestStatus.PENDING) {
-            throw new IllegalStateException("Can only cancel pending lease requests. Current status: " + leaseRequest.getStatus());
+            throw new IllegalStateException("This lease request cannot be cancelled. Current status: " + leaseRequest.getStatus() + ". Only pending requests can be cancelled.");
         }
 
         leaseRequest.setStatus(LeaseRequestStatus.CANCELLED);
@@ -156,13 +158,13 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     @Override
     public List<LeaseRequestResponse> getPendingRequestsForProperty(UUID propertyId, String landlordEmail) {
         Citizen landlord = citizenRepository.findByEmail(landlordEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found for email: " + landlordEmail));
+                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found. Please ensure you are logged in with a valid account."));
 
         Property property = propertyRepository.findById(propertyId)
-                .orElseThrow(() -> new IllegalArgumentException("Property not found: " + propertyId));
+                .orElseThrow(() -> new IllegalArgumentException("Property not found. The property ID provided is invalid."));
 
         if (!property.getLandlord().getId().equals(landlord.getId())) {
-            throw new IllegalArgumentException("You can only view requests for your own properties");
+            throw new IllegalArgumentException("Access denied. You can only view requests for your own properties.");
         }
 
         List<LeaseRequest> requests = leaseRequestRepository.findByPropertyId(propertyId).stream()
@@ -175,13 +177,13 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     @Override
     public List<LeaseRequestResponse> getPendingRequestsForUnit(UUID unitId, String landlordEmail) {
         Citizen landlord = citizenRepository.findByEmail(landlordEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found for email: " + landlordEmail));
+                .orElseThrow(() -> new IllegalArgumentException("Landlord account not found. Please ensure you are logged in with a valid account."));
 
         PropertyUnit unit = propertyUnitRepository.findById(unitId)
-                .orElseThrow(() -> new IllegalArgumentException("Unit not found: " + unitId));
+                .orElseThrow(() -> new IllegalArgumentException("Unit not found. The unit ID provided is invalid."));
 
         if (!unit.getProperty().getLandlord().getId().equals(landlord.getId())) {
-            throw new IllegalArgumentException("You can only view requests for your own properties");
+            throw new IllegalArgumentException("Access denied. You can only view requests for your own properties.");
         }
 
         List<LeaseRequest> requests = leaseRequestRepository.findByUnitId(unitId).stream()
@@ -192,21 +194,54 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     }
 
     private LeaseRequestResponse toResponse(LeaseRequest leaseRequest) {
+        Property property = leaseRequest.getProperty();
+        PropertyUnit unit = leaseRequest.getUnit();
+        
+        // Get property images and resolve MinIO URLs
+        List<String> propertyImages = property.getImages() != null 
+            ? property.getImages().stream().map(img -> storageService.resolveImageUrl(img.getImageUrl())).toList()
+            : List.of();
+        
+        String propertyImage = propertyImages.isEmpty() ? "" : propertyImages.get(0);
+        
+        // Calculate security deposit (2 months rent)
+        java.math.BigDecimal securityDeposit = leaseRequest.getProposedRent().multiply(java.math.BigDecimal.valueOf(2));
+        
+        // Calculate start and end dates
+        String startDate = leaseRequest.getCreatedAt().toLocalDate().toString();
+        String endDate = leaseRequest.getCreatedAt().plusMonths(leaseRequest.getLeaseDurationMonths()).toLocalDate().toString();
+        
+        // Get area as BigDecimal
+        java.math.BigDecimal area = unit != null ? unit.getAreaSqMeter() : 
+            (property.getAreaSqMeter() != null ? property.getAreaSqMeter() : java.math.BigDecimal.ZERO);
+        
         return new LeaseRequestResponse(
                 leaseRequest.getId(),
-                leaseRequest.getProperty().getId(),
-                leaseRequest.getProperty().getPropertyCode(),
-                leaseRequest.getProperty().getTitle(),
-                leaseRequest.getUnit() != null ? leaseRequest.getUnit().getId() : null,
-                leaseRequest.getUnit() != null ? leaseRequest.getUnit().getUnitCode() : null,
+                property.getId(),
+                property.getPropertyCode(),
+                property.getTitle(),
+                property.getPropertyType(),
+                property.getAddress() != null ? property.getAddress().getCity() + ", " + property.getAddress().getSubCity() : "",
+                propertyImage,
+                propertyImages,
+                unit != null ? unit.getId() : null,
+                unit != null ? unit.getUnitCode() : null,
+                unit != null ? unit.getUnitName() : null,
+                area,
                 leaseRequest.getApplicant().getId(),
                 leaseRequest.getApplicant().getFirstName() + " " + leaseRequest.getApplicant().getLastName(),
                 leaseRequest.getApplicant().getEmail(),
+                leaseRequest.getApplicant().getPhone(),
+                leaseRequest.getApplicant().getNationalId(),
+                leaseRequest.getApplicant().getWorksOn(),
                 leaseRequest.getLandlord().getId(),
                 leaseRequest.getLandlord().getFirstName() + " " + leaseRequest.getLandlord().getLastName(),
                 leaseRequest.getLandlord().getEmail(),
                 leaseRequest.getProposedRent(),
+                securityDeposit,
                 leaseRequest.getLeaseDurationMonths(),
+                startDate,
+                endDate,
                 leaseRequest.getApplicantNotes(),
                 leaseRequest.getLandlordRemarks(),
                 leaseRequest.getStatus(),

@@ -40,6 +40,9 @@ public class Citizen {
     @Column(nullable = false, unique = true)
     private String email;
 
+    /** National ID / Fayda ID of the citizen */
+    private String nationalId;
+
     /** Employer / organization the citizen works at (e.g. "CBE", "Ethio Telecom") */
     private String worksOn;
 

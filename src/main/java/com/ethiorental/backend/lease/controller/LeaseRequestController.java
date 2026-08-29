@@ -26,7 +26,7 @@ public class LeaseRequestController {
      * Submit a new lease application for a property or unit.
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<LeaseRequestResponse> submitLeaseRequest(
             @RequestBody @Valid LeaseRequestRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -39,7 +39,7 @@ public class LeaseRequestController {
      * Get all lease requests for the authenticated applicant.
      */
     @GetMapping("/my")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<LeaseRequestResponse>> getMyLeaseRequests(
             @AuthenticationPrincipal UserDetails userDetails) {
         
@@ -50,7 +50,7 @@ public class LeaseRequestController {
      * Get all lease requests for a landlord's properties.
      */
     @GetMapping("/landlord")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<LeaseRequestResponse>> getLandlordLeaseRequests(
             @AuthenticationPrincipal UserDetails userDetails) {
         

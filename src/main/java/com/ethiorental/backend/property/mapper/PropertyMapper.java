@@ -100,6 +100,18 @@ public class PropertyMapper {
     }
 
     public PropertyUnitResponse toUnitResponse(PropertyUnit unit) {
+        // Get property images for the unit (units inherit images from their parent property)
+        String propertyImage = "";
+        List<String> propertyImages = List.of();
+        
+        if (unit.getProperty() != null && unit.getProperty().getImages() != null) {
+            List<String> resolvedImages = unit.getProperty().getImages().stream()
+                .map(img -> storageService.resolveImageUrl(img.getImageUrl()))
+                .toList();
+            propertyImages = resolvedImages;
+            propertyImage = resolvedImages.isEmpty() ? "" : resolvedImages.get(0);
+        }
+        
         return new PropertyUnitResponse(
                 unit.getId(),
                 unit.getProperty() != null ? unit.getProperty().getId() : null,
@@ -116,6 +128,8 @@ public class PropertyMapper {
                 unit.getWaterSupply(),
                 unit.getFrontage(),
                 unit.getDescription(),
+                propertyImage,
+                propertyImages,
                 unit.getCreatedAt(),
                 unit.getUpdatedAt()
         );

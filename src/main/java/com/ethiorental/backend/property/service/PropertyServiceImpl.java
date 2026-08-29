@@ -191,6 +191,10 @@ public class PropertyServiceImpl implements PropertyService {
         if (property == null) {
             throw new PropertyNotFoundException("Property not found with code: " + propertyCode);
         }
+        // Only return properties that are LISTED (approved by supervisor and ready for public viewing)
+        if (property.getStatus() != PropertyStatus.LISTED) {
+            throw new PropertyNotFoundException("Property not available for public viewing with code: " + propertyCode);
+        }
         return mapper.toPropertyResponse(property);
     }
 
