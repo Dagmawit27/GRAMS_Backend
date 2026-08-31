@@ -28,6 +28,8 @@ public interface LeaseRequestRepository extends JpaRepository<LeaseRequest, UUID
 
     Optional<LeaseRequest> findByUnitIdAndApplicantId(UUID unitId, UUID applicantId);
 
+    Optional<LeaseRequest> findByRequestCode(String requestCode);
+
     @Query("SELECT lr FROM LeaseRequest lr WHERE lr.applicant.id = :applicantId AND lr.status = :status")
     List<LeaseRequest> findByApplicantIdAndStatus(@Param("applicantId") UUID applicantId, @Param("status") LeaseRequestStatus status);
 

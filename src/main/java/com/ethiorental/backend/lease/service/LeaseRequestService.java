@@ -19,14 +19,14 @@ public interface LeaseRequestService {
     /** Get all lease requests for a landlord's properties. */
     List<LeaseRequestResponse> getLandlordLeaseRequests(String landlordEmail);
 
-    /** Get a single lease request by id. */
-    LeaseRequestResponse getLeaseRequestById(UUID id);
+    /** Get a single lease request by request code. */
+    LeaseRequestResponse getLeaseRequestByCode(String requestCode);
 
     /** Update lease request status (approve/reject) - landlord only. */
-    LeaseRequestResponse updateLeaseRequestStatus(UUID id, LeaseStatusUpdateRequest request, String landlordEmail);
+    LeaseRequestResponse updateLeaseRequestStatus(String requestCode, LeaseStatusUpdateRequest request, String landlordEmail);
 
     /** Cancel a lease request - applicant only. */
-    void cancelLeaseRequest(UUID id, String applicantEmail);
+    void cancelLeaseRequest(String requestCode, String applicantEmail);
 
     /** Get pending lease requests for a property. */
     List<LeaseRequestResponse> getPendingRequestsForProperty(UUID propertyId, String landlordEmail);

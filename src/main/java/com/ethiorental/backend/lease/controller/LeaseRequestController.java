@@ -58,37 +58,37 @@ public class LeaseRequestController {
     }
 
     /**
-     * Get a single lease request by id.
+     * Get a single lease request by request code.
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{requestCode}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<LeaseRequestResponse> getLeaseRequestById(@PathVariable UUID id) {
-        return ResponseEntity.ok(leaseRequestService.getLeaseRequestById(id));
+    public ResponseEntity<LeaseRequestResponse> getLeaseRequestById(@PathVariable String requestCode) {
+        return ResponseEntity.ok(leaseRequestService.getLeaseRequestByCode(requestCode));
     }
 
     /**
      * Update lease request status (approve/reject) - landlord only.
      */
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/{requestCode}/status")
     @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
     public ResponseEntity<LeaseRequestResponse> updateLeaseRequestStatus(
-            @PathVariable UUID id,
+            @PathVariable String requestCode,
             @RequestBody @Valid LeaseStatusUpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         
-        return ResponseEntity.ok(leaseRequestService.updateLeaseRequestStatus(id, request, userDetails.getUsername()));
+        return ResponseEntity.ok(leaseRequestService.updateLeaseRequestStatus(requestCode, request, userDetails.getUsername()));
     }
 
     /**
      * Cancel a lease request - applicant only.
      */
-    @PatchMapping("/{id}/cancel")
+    @PatchMapping("/{requestCode}/cancel")
     @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
     public ResponseEntity<Void> cancelLeaseRequest(
-            @PathVariable UUID id,
+            @PathVariable String requestCode,
             @AuthenticationPrincipal UserDetails userDetails) {
         
-        leaseRequestService.cancelLeaseRequest(id, userDetails.getUsername());
+        leaseRequestService.cancelLeaseRequest(requestCode, userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }
 

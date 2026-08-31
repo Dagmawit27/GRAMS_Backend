@@ -103,17 +103,17 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     }
 
     @Override
-    public LeaseRequestResponse getLeaseRequestById(UUID id) {
-        LeaseRequest leaseRequest = leaseRequestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request ID provided is invalid."));
+    public LeaseRequestResponse getLeaseRequestByCode(String requestCode) {
+        LeaseRequest leaseRequest = leaseRequestRepository.findByRequestCode(requestCode)
+                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request code provided is invalid."));
         return toResponse(leaseRequest);
     }
 
     @Override
     @Transactional
-    public LeaseRequestResponse updateLeaseRequestStatus(UUID id, LeaseStatusUpdateRequest request, String landlordEmail) {
-        LeaseRequest leaseRequest = leaseRequestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request ID provided is invalid."));
+    public LeaseRequestResponse updateLeaseRequestStatus(String requestCode, LeaseStatusUpdateRequest request, String landlordEmail) {
+        LeaseRequest leaseRequest = leaseRequestRepository.findByRequestCode(requestCode)
+                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request code provided is invalid."));
 
         Citizen landlord = citizenRepository.findByEmail(landlordEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Landlord account not found. Please ensure you are logged in with a valid account."));
@@ -136,9 +136,9 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
 
     @Override
     @Transactional
-    public void cancelLeaseRequest(UUID id, String applicantEmail) {
-        LeaseRequest leaseRequest = leaseRequestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request ID provided is invalid."));
+    public void cancelLeaseRequest(String requestCode, String applicantEmail) {
+        LeaseRequest leaseRequest = leaseRequestRepository.findByRequestCode(requestCode)
+                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request code provided is invalid."));
 
         Citizen applicant = citizenRepository.findByEmail(applicantEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User account not found. Please ensure you are logged in with a valid account."));
@@ -216,25 +216,22 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
             (property.getAreaSqMeter() != null ? property.getAreaSqMeter() : java.math.BigDecimal.ZERO);
         
         return new LeaseRequestResponse(
-                leaseRequest.getId(),
-                property.getId(),
+                leaseRequest.getRequestCode(),
+                leaseRequest.getRequestCode(),
                 property.getPropertyCode(),
                 property.getTitle(),
                 property.getPropertyType(),
                 property.getAddress() != null ? property.getAddress().getCity() + ", " + property.getAddress().getSubCity() : "",
                 propertyImage,
                 propertyImages,
-                unit != null ? unit.getId() : null,
                 unit != null ? unit.getUnitCode() : null,
                 unit != null ? unit.getUnitName() : null,
                 area,
-                leaseRequest.getApplicant().getId(),
                 leaseRequest.getApplicant().getFirstName() + " " + leaseRequest.getApplicant().getLastName(),
                 leaseRequest.getApplicant().getEmail(),
                 leaseRequest.getApplicant().getPhone(),
                 leaseRequest.getApplicant().getNationalId(),
                 leaseRequest.getApplicant().getWorksOn(),
-                leaseRequest.getLandlord().getId(),
                 leaseRequest.getLandlord().getFirstName() + " " + leaseRequest.getLandlord().getLastName(),
                 leaseRequest.getLandlord().getEmail(),
                 leaseRequest.getProposedRent(),

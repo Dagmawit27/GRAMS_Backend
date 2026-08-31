@@ -21,6 +21,9 @@ public class LeaseRequest {
     @UuidGenerator
     private UUID id;
 
+    @Column(unique = true, nullable = false, updatable = false)
+    private String requestCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "property_id", nullable = false)
     private Property property;
@@ -66,5 +69,7 @@ public class LeaseRequest {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.status == null) this.status = LeaseRequestStatus.PENDING;
+        // generate request code: LR + timestamp + random
+        this.requestCode = "LR" + System.currentTimeMillis() + (int)(Math.random() * 1000);
     }
 }
