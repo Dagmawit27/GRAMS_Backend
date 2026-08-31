@@ -13,6 +13,9 @@ import com.ethiorental.backend.property.dto.PropertyUnitResponse;
 import com.ethiorental.backend.property.entity.*;
 import com.ethiorental.backend.property.enums.PropertyStatus;
 import com.ethiorental.backend.property.enums.UnitStatus;
+import com.ethiorental.backend.property.event.PropertyRegisteredEvent;
+import com.ethiorental.backend.property.event.PropertyVerifiedEvent;
+import com.ethiorental.backend.property.event.PropertyDeletedEvent;
 import com.ethiorental.backend.property.exception.PropertyNotFoundException;
 import com.ethiorental.backend.property.mapper.PropertyMapper;
 import com.ethiorental.backend.property.repository.*;
@@ -21,12 +24,15 @@ import com.ethiorental.backend.shared.audit.AuditAction;
 import com.ethiorental.backend.shared.audit.AuditService;
 import com.ethiorental.backend.shared.audit.Auditable;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PropertyServiceImpl implements PropertyService {
@@ -41,6 +47,7 @@ public class PropertyServiceImpl implements PropertyService {
     private final SubCityWoredaRepository subCityWoredaRepository;
     private final AuditService auditService;
     private final PropertyUnitRepository propertyUnitRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ── Register ──────────────────────────────────────────────────────────────
 
@@ -160,7 +167,30 @@ public class PropertyServiceImpl implements PropertyService {
             }
         }
 
-        return mapper.toPropertyResponse(propertyRepository.save(saved));
+        Property finalProperty = propertyRepository.save(saved);
+
+        // Publish PropertyRegisteredEvent for notification system
+        log.info("Publishing PropertyRegisteredEvent for propertyCode: {}, subCity: {}, woreda: {}", 
+            finalProperty.getPropertyCode(), 
+            finalProperty.getAddress().getSubCity(), 
+            finalProperty.getAddress().getWoreda());
+        
+        PropertyRegisteredEvent event = new PropertyRegisteredEvent(
+            this,
+            finalProperty.getId(),
+            finalProperty.getPropertyCode(),
+            finalProperty.getTitle(),
+            finalProperty.getPropertyType(),
+            finalProperty.getAddress().getCity(),
+            finalProperty.getAddress().getSubCity(),
+            finalProperty.getAddress().getWoreda(),
+            landlord.getId().toString(),
+            landlord.getFirstName() + " " + landlord.getLastName()
+        );
+        eventPublisher.publishEvent(event);
+        log.info("PropertyRegisteredEvent published successfully");
+
+        return mapper.toPropertyResponse(finalProperty);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -273,6 +303,26 @@ public class PropertyServiceImpl implements PropertyService {
                 .build();
         verificationRepository.save(verification);
 
+        // Publish PropertyVerifiedEvent when woreda_officer verifies property
+        if (newStatus == PropertyStatus.VERIFIED && callerRoles.contains("WOREDA_OFFICER")) {
+            PropertyVerifiedEvent event = new PropertyVerifiedEvent(
+                this,
+                saved.getId(),
+                saved.getPropertyCode(),
+                saved.getTitle(),
+                saved.getPropertyType(),
+                saved.getAddress().getCity(),
+                saved.getAddress().getSubCity(),
+                saved.getAddress().getWoreda(),
+                officer.getId().toString(),
+                officer.getFirstName() + " " + officer.getLastName(),
+                remarks,
+                saved.getLandlord().getId().toString(),
+                saved.getLandlord().getEmail()
+            );
+            eventPublisher.publishEvent(event);
+        }
+
         // Determine correct audit action based on the new status
         AuditAction action = switch (newStatus) {
             case VERIFIED, LISTED -> AuditAction.VERIFY;
@@ -332,6 +382,19 @@ public class PropertyServiceImpl implements PropertyService {
                 System.err.println("Failed to delete document from MinIO: " + doc.getFilePath());
             }
         }
+
+        // Publish PropertyDeletedEvent before deletion
+        PropertyDeletedEvent event = new PropertyDeletedEvent(
+            this,
+            property.getId(),
+            property.getPropertyCode(),
+            property.getTitle(),
+            property.getAddress().getCity(),
+            property.getAddress().getSubCity(),
+            property.getAddress().getWoreda()
+        );
+        eventPublisher.publishEvent(event);
+        log.info("PropertyDeletedEvent published for propertyCode: {}", property.getPropertyCode());
 
         // Delete the property (cascade will delete related entities)
         propertyRepository.delete(property);

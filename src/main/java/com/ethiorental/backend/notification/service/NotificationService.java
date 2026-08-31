@@ -60,6 +60,10 @@ public class NotificationService {
     }
 
     private NotificationResponse mapToResponse(Notification n) {
+        return toNotificationResponse(n);
+    }
+
+    public NotificationResponse toNotificationResponse(Notification n) {
         return NotificationResponse.builder()
                 .id(n.getId())
                 .recipientUserId(n.getRecipientUserId())

@@ -100,6 +100,8 @@ public class SecurityConfig {
                 // Reports — admin and auditor roles only (method security also enforces per-endpoint)
                 .requestMatchers("/api/v1/reports/**").hasAnyRole(
                         "SYSTEM_ADMINISTRATOR", "CITY_ADMINISTRATOR", "AUDITOR")
+                // SSE notifications — permitAll for now (EventSource doesn't support Authorization headers)
+                .requestMatchers("/api/notifications/**").permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(daoAuthenticationProvider())
