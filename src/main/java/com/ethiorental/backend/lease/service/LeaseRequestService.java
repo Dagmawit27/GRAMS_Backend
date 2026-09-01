@@ -28,6 +28,9 @@ public interface LeaseRequestService {
     /** Cancel a lease request - applicant only. */
     void cancelLeaseRequest(String requestCode, String applicantEmail);
 
+    /** Delete a cancelled lease request - applicant only. */
+    void deleteLeaseRequest(String requestCode, String applicantEmail);
+
     /** Get pending lease requests for a property. */
     List<LeaseRequestResponse> getPendingRequestsForProperty(UUID propertyId, String landlordEmail);
 

@@ -16,6 +16,7 @@ import com.ethiorental.backend.property.enums.UnitStatus;
 import com.ethiorental.backend.property.event.PropertyRegisteredEvent;
 import com.ethiorental.backend.property.event.PropertyVerifiedEvent;
 import com.ethiorental.backend.property.event.PropertyDeletedEvent;
+import com.ethiorental.backend.property.event.PropertyApprovedEvent;
 import com.ethiorental.backend.property.exception.PropertyNotFoundException;
 import com.ethiorental.backend.property.mapper.PropertyMapper;
 import com.ethiorental.backend.property.repository.*;
@@ -321,6 +322,28 @@ public class PropertyServiceImpl implements PropertyService {
                 saved.getLandlord().getEmail()
             );
             eventPublisher.publishEvent(event);
+        }
+
+        // Publish PropertyApprovedEvent when woreda_supervisor approves property (LISTED)
+        if (newStatus == PropertyStatus.LISTED && callerRoles.contains("WOREDA_SUPERVISOR")) {
+            log.info("Preparing to publish PropertyApprovedEvent for propertyCode: {}, landlordEmail: {}", 
+                     saved.getPropertyCode(), saved.getLandlord().getEmail());
+            PropertyApprovedEvent event = new PropertyApprovedEvent(
+                this,
+                saved.getId(),
+                saved.getPropertyCode(),
+                saved.getTitle(),
+                saved.getPropertyType(),
+                saved.getAddress().getCity(),
+                saved.getAddress().getSubCity(),
+                saved.getAddress().getWoreda(),
+                officer.getId().toString(),
+                officer.getFirstName() + " " + officer.getLastName(),
+                saved.getLandlord().getId().toString(),
+                saved.getLandlord().getEmail()
+            );
+            eventPublisher.publishEvent(event);
+            log.info("PropertyApprovedEvent published for propertyCode: {}", saved.getPropertyCode());
         }
 
         // Determine correct audit action based on the new status

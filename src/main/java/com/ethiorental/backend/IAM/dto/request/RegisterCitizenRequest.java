@@ -40,4 +40,12 @@ public class RegisterCitizenRequest {
 
     // LANDLORD, TENANT, or leave null for default CITIZEN
     private String rolePreference;
+
+    /** Location fields for agreement form */
+    private String region;
+    private String city;
+    private String subCity;
+    private String woreda;
+    private String houseNumber;
+    private String specificPlace;
 }

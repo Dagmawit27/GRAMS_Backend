@@ -46,6 +46,14 @@ public class Citizen {
     /** Employer / organization the citizen works at (e.g. "CBE", "Ethio Telecom") */
     private String worksOn;
 
+    /** Location fields for agreement form */
+    private String region;
+    private String city;
+    private String subCity;
+    private String woreda;
+    private String houseNumber;
+    private String specificPlace;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CitizenStatus status;
@@ -57,5 +65,16 @@ public class Citizen {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.status == null) this.status = CitizenStatus.ACTIVE;
+    }
+
+    public String getFullName() {
+        if (middleName != null && !middleName.isEmpty()) {
+            return firstName + " " + middleName + " " + lastName;
+        }
+        return firstName + " " + lastName;
+    }
+
+    public String getPhoneNumber() {
+        return phone;
     }
 }

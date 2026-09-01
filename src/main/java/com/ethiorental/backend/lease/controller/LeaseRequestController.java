@@ -83,12 +83,25 @@ public class LeaseRequestController {
      * Cancel a lease request - applicant only.
      */
     @PatchMapping("/{requestCode}/cancel")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('TENANT','CITIZEN','BOTH')")
     public ResponseEntity<Void> cancelLeaseRequest(
             @PathVariable String requestCode,
             @AuthenticationPrincipal UserDetails userDetails) {
-        
+
         leaseRequestService.cancelLeaseRequest(requestCode, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Delete a cancelled lease request - applicant only.
+     */
+    @DeleteMapping("/{requestCode}")
+    @PreAuthorize("hasAnyRole('TENANT','CITIZEN','BOTH')")
+    public ResponseEntity<Void> deleteLeaseRequest(
+            @PathVariable String requestCode,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        leaseRequestService.deleteLeaseRequest(requestCode, userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }
 
@@ -112,7 +125,7 @@ public class LeaseRequestController {
     public ResponseEntity<List<LeaseRequestResponse>> getPendingRequestsForUnit(
             @PathVariable UUID unitId,
             @AuthenticationPrincipal UserDetails userDetails) {
-        
+
         return ResponseEntity.ok(leaseRequestService.getPendingRequestsForUnit(unitId, userDetails.getUsername()));
     }
 }

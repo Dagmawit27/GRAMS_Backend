@@ -7,6 +7,10 @@ import com.ethiorental.backend.lease.dto.LeaseRequestResponse;
 import com.ethiorental.backend.lease.dto.LeaseStatusUpdateRequest;
 import com.ethiorental.backend.lease.entity.LeaseRequest;
 import com.ethiorental.backend.lease.enums.LeaseRequestStatus;
+import com.ethiorental.backend.lease.event.LeaseRequestSubmittedEvent;
+import com.ethiorental.backend.lease.event.LeaseRequestStatusChangedEvent;
+import com.ethiorental.backend.lease.event.LeaseRequestCancelledEvent;
+import com.ethiorental.backend.lease.event.AgreementGeneratedEvent;
 import com.ethiorental.backend.lease.repository.LeaseRequestRepository;
 import com.ethiorental.backend.property.entity.Property;
 import com.ethiorental.backend.property.entity.PropertyUnit;
@@ -16,6 +20,8 @@ import com.ethiorental.backend.property.repository.PropertyRepository;
 import com.ethiorental.backend.property.repository.PropertyUnitRepository;
 import com.ethiorental.backend.property.storage.MinioStorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +31,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LeaseRequestServiceImpl implements LeaseRequestService {
 
     private final LeaseRequestRepository leaseRequestRepository;
@@ -32,6 +39,7 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
     private final PropertyRepository propertyRepository;
     private final PropertyUnitRepository propertyUnitRepository;
     private final MinioStorageService storageService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -81,6 +89,27 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
                 .build();
 
         LeaseRequest saved = leaseRequestRepository.save(leaseRequest);
+
+        // Publish LeaseRequestSubmittedEvent
+        log.info("Preparing to publish LeaseRequestSubmittedEvent for requestCode: {}, landlordEmail: {}", 
+                 saved.getRequestCode(), property.getLandlord().getEmail());
+        LeaseRequestSubmittedEvent event = new LeaseRequestSubmittedEvent(
+            this,
+            saved.getId(),
+            saved.getRequestCode(),
+            applicant.getFirstName() + " " + applicant.getLastName(),
+            applicant.getEmail(),
+            applicant.getPhone(),
+            property.getId(),
+            property.getPropertyCode(),
+            property.getTitle(),
+            property.getLandlord().getId().toString(),
+            property.getLandlord().getEmail(),
+            property.getMonthlyRent().toString()
+        );
+        eventPublisher.publishEvent(event);
+        log.info("LeaseRequestSubmittedEvent published for requestCode: {}", saved.getRequestCode());
+
         return toResponse(saved);
     }
 
@@ -126,11 +155,32 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
             throw new IllegalStateException("This lease request cannot be updated. Current status: " + leaseRequest.getStatus() + ". Only pending requests can be modified.");
         }
 
+        LeaseRequestStatus oldStatus = leaseRequest.getStatus();
         leaseRequest.setStatus(request.newStatus());
         leaseRequest.setLandlordRemarks(request.remarks());
         leaseRequest.setReviewedAt(LocalDateTime.now());
 
         LeaseRequest updated = leaseRequestRepository.save(leaseRequest);
+
+        // Publish LeaseRequestStatusChangedEvent
+        LeaseRequestStatusChangedEvent event = new LeaseRequestStatusChangedEvent(
+            this,
+            updated.getId(),
+            updated.getRequestCode(),
+            oldStatus.name(),
+            request.newStatus().name(),
+            leaseRequest.getApplicant().getFirstName() + " " + leaseRequest.getApplicant().getLastName(),
+            leaseRequest.getApplicant().getEmail(),
+            leaseRequest.getProperty().getId(),
+            leaseRequest.getProperty().getPropertyCode(),
+            leaseRequest.getProperty().getTitle(),
+            landlord.getFirstName() + " " + landlord.getLastName(),
+            landlord.getEmail()
+        );
+        eventPublisher.publishEvent(event);
+        log.info("LeaseRequestStatusChangedEvent published for requestCode: {} from {} to {}", 
+                 updated.getRequestCode(), oldStatus, request.newStatus());
+
         return toResponse(updated);
     }
 
@@ -152,7 +202,46 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
         }
 
         leaseRequest.setStatus(LeaseRequestStatus.CANCELLED);
-        leaseRequestRepository.save(leaseRequest);
+        LeaseRequest saved = leaseRequestRepository.save(leaseRequest);
+
+        // Publish LeaseRequestCancelledEvent
+        log.info("Preparing to publish LeaseRequestCancelledEvent for requestCode: {}, landlordEmail: {}", 
+                 saved.getRequestCode(), saved.getLandlord().getEmail());
+        LeaseRequestCancelledEvent event = new LeaseRequestCancelledEvent(
+            this,
+            saved.getId(),
+            saved.getRequestCode(),
+            applicant.getFirstName() + " " + applicant.getLastName(),
+            applicant.getEmail(),
+            saved.getProperty().getId(),
+            saved.getProperty().getPropertyCode(),
+            saved.getProperty().getTitle(),
+            saved.getLandlord().getId().toString(),
+            saved.getLandlord().getEmail()
+        );
+        eventPublisher.publishEvent(event);
+        log.info("LeaseRequestCancelledEvent published for requestCode: {}", saved.getRequestCode());
+    }
+
+    @Override
+    @Transactional
+    public void deleteLeaseRequest(String requestCode, String applicantEmail) {
+        LeaseRequest leaseRequest = leaseRequestRepository.findByRequestCode(requestCode)
+                .orElseThrow(() -> new IllegalArgumentException("Lease request not found. The request code provided is invalid."));
+
+        Citizen applicant = citizenRepository.findByEmail(applicantEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User account not found. Please ensure you are logged in with a valid account."));
+
+        if (!leaseRequest.getApplicant().getId().equals(applicant.getId())) {
+            throw new IllegalArgumentException("Access denied. You can only delete your own lease requests.");
+        }
+
+        if (leaseRequest.getStatus() != LeaseRequestStatus.CANCELLED) {
+            throw new IllegalStateException("This lease request cannot be deleted. Current status: " + leaseRequest.getStatus() + ". Only cancelled requests can be deleted.");
+        }
+
+        leaseRequestRepository.delete(leaseRequest);
+        log.info("Lease request deleted: {}", requestCode);
     }
 
     @Override
@@ -247,4 +336,5 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
                 leaseRequest.getExpiresAt()
         );
     }
+
 }

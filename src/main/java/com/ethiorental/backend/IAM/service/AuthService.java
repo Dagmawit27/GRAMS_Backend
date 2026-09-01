@@ -70,6 +70,12 @@ public class AuthService {
                     .phone(req.getPhoneNumber())
                     .email(req.getEmail())
                     .worksOn(req.getWorksOn())
+                    .region(req.getRegion())
+                    .city(req.getCity())
+                    .subCity(req.getSubCity())
+                    .woreda(req.getWoreda())
+                    .houseNumber(req.getHouseNumber())
+                    .specificPlace(req.getSpecificPlace())
                     .status(CitizenStatus.ACTIVE)
                     .build();
             citizenRepository.save(citizen);
