@@ -36,4 +36,22 @@ public interface LeaseRequestService {
 
     /** Get pending lease requests for a specific unit. */
     List<LeaseRequestResponse> getPendingRequestsForUnit(UUID unitId, String landlordEmail);
+
+    /** Sign agreement using password - landlord or tenant. */
+    LeaseRequestResponse signAgreementWithPassword(String requestCode, String password, String userEmail);
+
+    /** Sign agreement using OTP - landlord or tenant. */
+    LeaseRequestResponse signAgreementWithOtp(String requestCode, String otp, String userEmail);
+
+    /** Verify lease request - officer only. */
+    LeaseRequestResponse verifyLeaseRequest(String requestCode, String officerEmail);
+
+    /** Approve lease request - supervisor only. */
+    LeaseRequestResponse approveLeaseRequest(String requestCode, String supervisorEmail);
+
+    /** Get lease requests by status - for officers/supervisors. */
+    List<LeaseRequestResponse> getLeaseRequestsByStatus(LeaseRequestStatus status);
+
+    List<LeaseRequestResponse> getLeaseRequestsByStatusAndJurisdiction(
+        LeaseRequestStatus status, String subCity, String woreda);
 }

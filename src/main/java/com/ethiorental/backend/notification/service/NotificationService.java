@@ -46,6 +46,11 @@ public class NotificationService {
         notificationRepository.markAllAsRead(userId);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<NotificationPreference> getUserPreferences(String userId) {
+        return preferenceRepository.findByUserId(userId);
+    }
+
     @Transactional
     public NotificationPreference updatePreference(String userId, NotificationPreferenceRequest request) {
         NotificationPreference pref = preferenceRepository.findByUserIdAndType(userId, request.getType())

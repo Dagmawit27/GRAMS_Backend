@@ -39,14 +39,14 @@ public class LeaseRequestStatusChangedListener {
             log.info("Notifying tenant: {}", tenantUserId);
 
             String message;
-            if ("ACCEPTED".equalsIgnoreCase(event.getNewStatus())) {
+            if ("LANDLORD_APPROVED".equalsIgnoreCase(event.getNewStatus())) {
                 message = String.format(
                     "Your lease request for %s (%s) has been accepted by %s. Please proceed with agreement signing.",
                     event.getPropertyTitle(),
                     event.getPropertyCode(),
                     event.getLandlordName()
                 );
-            } else if ("DECLINED".equalsIgnoreCase(event.getNewStatus())) {
+            } else if ("REJECTED".equalsIgnoreCase(event.getNewStatus())) {
                 message = String.format(
                     "Your lease request for %s (%s) has been declined by %s.",
                     event.getPropertyTitle(),
@@ -66,7 +66,7 @@ public class LeaseRequestStatusChangedListener {
 
             Notification notification = new Notification();
             notification.setRecipientUserId(tenantUserId);
-            notification.setType(NotificationType.AGREEMENT_SIGNED);
+            notification.setType(NotificationType.LEASE_REQUEST_STATUS_CHANGED);
             notification.setModule("LEASE");
             notification.setEntityId(event.getLeaseRequestId().toString());
             notification.setMessage(message);

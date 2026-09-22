@@ -1,20 +1,30 @@
 package com.ethiorental.backend.agreement.service;
 
 import com.ethiorental.backend.agreement.dto.AgreementResponse;
+import com.ethiorental.backend.lease.entity.LeaseRequest;
+
+import java.util.List;
 
 public interface AgreementService {
-    /** Generate agreement for an approved lease request - landlord only. */
-    AgreementResponse generateAgreement(String requestCode, String landlordEmail);
 
-    /** Sign agreement by landlord - landlord only. */
-    AgreementResponse signAgreement(String requestCode, String otp, String landlordEmail);
+    AgreementResponse createAgreementFromLeaseRequest(LeaseRequest leaseRequest, String supervisorEmail);
 
-    /** Sign agreement by tenant - tenant only. */
-    AgreementResponse signAgreementByTenant(String requestCode, String otp, String tenantEmail);
+    List<AgreementResponse> getMyAgreements(String userEmail);
 
-    /** Get agreement by request code. */
+    List<AgreementResponse> getLandlordAgreements(String userEmail);
+
+    List<AgreementResponse> getTenantAgreements(String userEmail);
+
+    AgreementResponse getAgreementByNumber(String agreementNumber);
+
     AgreementResponse getAgreementByRequestCode(String requestCode);
 
-    /** Get agreement by agreement code. */
-    AgreementResponse getAgreementByAgreementCode(String agreementCode);
+    List<AgreementResponse> getAllActiveAgreements();
+
+    List<AgreementResponse> getAllAgreements();
+
+    void expireAgreement(java.util.UUID agreementId);
+    void renewAgreement(String agreementNumber, String userEmail);
+    void requestCancellation(String agreementNumber, String landlordEmail);
+    void acceptCancellation(String agreementNumber, String tenantEmail);
 }

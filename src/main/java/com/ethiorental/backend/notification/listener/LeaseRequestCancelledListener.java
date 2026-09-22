@@ -40,7 +40,7 @@ public class LeaseRequestCancelledListener {
 
             Notification notification = new Notification();
             notification.setRecipientUserId(landlordUserId);
-            notification.setType(NotificationType.LEASE_CANCELLED);
+            notification.setType(NotificationType.LEASE_REQUEST_CANCELLED);
             notification.setModule("LEASE");
             notification.setEntityId(event.getLeaseRequestId().toString());
             notification.setMessage(String.format(

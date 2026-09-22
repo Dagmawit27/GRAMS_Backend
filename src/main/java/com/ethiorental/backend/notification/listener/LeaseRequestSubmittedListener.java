@@ -44,7 +44,7 @@ public class LeaseRequestSubmittedListener {
 
             Notification notification = new Notification();
             notification.setRecipientUserId(landlordUserId);
-            notification.setType(NotificationType.AGREEMENT);
+            notification.setType(NotificationType.AGREEMENT_REQUESTED);
             notification.setModule("LEASE");
             notification.setEntityId(event.getLeaseRequestId().toString());
             notification.setMessage(String.format(

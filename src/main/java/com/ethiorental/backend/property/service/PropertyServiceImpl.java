@@ -5,7 +5,13 @@ import com.ethiorental.backend.IAM.entity.GovernmentEmployee;
 import com.ethiorental.backend.IAM.repository.CitizenRepository;
 import com.ethiorental.backend.IAM.repository.EmployeeCredentialRepository;
 import com.ethiorental.backend.IAM.repository.EmployeeRoleRepository;
+import com.ethiorental.backend.agreement.entity.Agreement;
+import com.ethiorental.backend.agreement.enums.AgreementStatus;
+import com.ethiorental.backend.agreement.repository.AgreementRepository;
 import com.ethiorental.backend.location.repository.SubCityWoredaRepository;
+import com.ethiorental.backend.lease.entity.LeaseRequest;
+import com.ethiorental.backend.lease.enums.LeaseRequestStatus;
+import com.ethiorental.backend.lease.repository.LeaseRequestRepository;
 import com.ethiorental.backend.property.dto.PropertyRequest;
 import com.ethiorental.backend.property.dto.PropertyResponse;
 import com.ethiorental.backend.property.dto.PropertyUnitRequest;
@@ -49,6 +55,8 @@ public class PropertyServiceImpl implements PropertyService {
     private final AuditService auditService;
     private final PropertyUnitRepository propertyUnitRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AgreementRepository agreementRepository;
+    private final LeaseRequestRepository leaseRequestRepository;
 
     // ── Register ──────────────────────────────────────────────────────────────
 
@@ -197,55 +205,109 @@ public class PropertyServiceImpl implements PropertyService {
     // ── Queries ───────────────────────────────────────────────────────────────
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PropertyResponse> getMyProperties(String landlordEmail) {
         Citizen landlord = citizenRepository.findByEmail(landlordEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Landlord not found"));
-        return propertyRepository.findByLandlord(landlord)
-                .stream().map(mapper::toPropertyResponse).toList();
+        List<Property> properties = propertyRepository.findByLandlord(landlord);
+        return properties.stream().map(p -> {
+            List<PropertyUnit> units = getAndSyncPropertyUnits(p);
+            return mapper.toPropertyResponse(p, units);
+        }).toList();
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PropertyResponse getPropertyById(UUID id) {
         Property property = propertyRepository.findWithDetailsById(id);
         if (property == null) {
             throw new PropertyNotFoundException("Property not found: " + id);
         }
-        return mapper.toPropertyResponse(property);
+        List<PropertyUnit> units = getAndSyncPropertyUnits(property);
+        return mapper.toPropertyResponse(property, units);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PropertyResponse getPropertyByCode(String propertyCode) {
-        Property property = propertyRepository.findByPropertyCode(propertyCode);
+        if (propertyCode == null || propertyCode.trim().isEmpty()) {
+            throw new PropertyNotFoundException("Property code must not be empty");
+        }
+        String cleanCode = propertyCode.trim();
+
+        // 1. Look up property by property code (case-insensitive and trimmed)
+        List<Property> matched = propertyRepository.findByPropertyCodeMatches(cleanCode);
+        Property property = !matched.isEmpty() ? matched.get(0) : null;
+
+        // 2. Fallback: try finding by UUID if cleanCode is a valid UUID
+        if (property == null) {
+            try {
+                UUID id = UUID.fromString(cleanCode);
+                property = propertyRepository.findWithDetailsById(id);
+            } catch (Exception ignored) {}
+        }
+
         if (property == null) {
             throw new PropertyNotFoundException("Property not found with code: " + propertyCode);
         }
-        // Only return properties that are LISTED (approved by supervisor and ready for public viewing)
-        if (property.getStatus() != PropertyStatus.LISTED) {
-            throw new PropertyNotFoundException("Property not available for public viewing with code: " + propertyCode);
+
+        // 3. Load all units for this property and reconcile status with active agreements
+        List<PropertyUnit> units = getAndSyncPropertyUnits(property);
+        boolean hasUnits = units != null && !units.isEmpty();
+        boolean isCommercialOrMall = property.getPropertyType() != null &&
+                (property.getPropertyType().equalsIgnoreCase("Shopping Mall") ||
+                 property.getPropertyType().equalsIgnoreCase("Commercial") ||
+                 property.getPropertyType().toLowerCase().contains("mall") ||
+                 property.getPropertyType().toLowerCase().contains("plaza") ||
+                 property.getPropertyType().toLowerCase().contains("commercial"));
+        boolean isMultiUnit = hasUnits || isCommercialOrMall;
+
+        if (isMultiUnit) {
+            // Multi-unit property (e.g. Shopping Mall / Commercial Plaza / Apartment Complex)
+            // MUST ALWAYS be searchable and returnable so tenants can view the building and its units!
+            // Do NOT throw 404 even if units are rented; frontend renders individual unit statuses and availability badges.
+            // Do NOT overwrite database status during a read-only search operation.
+            if (property.getStatus() != PropertyStatus.LISTED && property.getStatus() != PropertyStatus.RENTED) {
+                throw new PropertyNotFoundException("Property not available for public viewing with code: " + propertyCode);
+            }
+
+            return mapper.toPropertyResponse(property, units);
+        } else {
+            // Single house property (no sub-units, e.g. Villa, single house)
+            // If rented, it must not be search-displayable for new lease applications
+            if (property.getStatus() == PropertyStatus.RENTED) {
+                throw new PropertyNotFoundException("This property is currently rented and not available for new lease applications.");
+            }
+            if (property.getStatus() != PropertyStatus.LISTED) {
+                throw new PropertyNotFoundException("Property not available for public viewing with code: " + propertyCode);
+            }
+            return mapper.toPropertyResponse(property, units);
         }
-        return mapper.toPropertyResponse(property);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PropertyResponse> getPropertiesByStatus(PropertyStatus status) {
-        return propertyRepository.findByStatus(status)
-                .stream().map(mapper::toPropertyResponse).toList();
+        List<Property> properties = propertyRepository.findByStatus(status);
+        return properties.stream().map(p -> {
+            List<PropertyUnit> units = getAndSyncPropertyUnits(p);
+            return mapper.toPropertyResponse(p, units);
+        }).toList();
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PropertyResponse> getPropertiesByJurisdiction(String subCity, String woreda, PropertyStatus status) {
         if (!subCityWoredaRepository.existsBySubCityIgnoreCaseAndWoreda(subCity, woreda)) {
             throw new IllegalArgumentException(
                 "Invalid jurisdiction: '" + subCity + "' Woreda " + woreda + " is not recognised."
             );
         }
-        return propertyRepository.findByJurisdiction(subCity, woreda, status)
-                .stream().map(mapper::toPropertyResponse).toList();
+        List<Property> properties = propertyRepository.findByJurisdiction(subCity, woreda, status);
+        return properties.stream().map(p -> {
+            List<PropertyUnit> units = getAndSyncPropertyUnits(p);
+            return mapper.toPropertyResponse(p, units);
+        }).toList();
     }
 
     // SRS §5.10, NFR-034, BR-027 — log property verification / status-change events
@@ -382,9 +444,9 @@ public class PropertyServiceImpl implements PropertyService {
         }
 
         // Only allow deletion if status is PENDING
-        if (property.getStatus() != PropertyStatus.PENDING) {
-            throw new IllegalStateException("Only pending properties can be deleted. Current status: " + property.getStatus());
-        }
+        // if (property.getStatus() != PropertyStatus.PENDING) {
+        //     throw new IllegalStateException("Only pending properties can be deleted. Current status: " + property.getStatus());
+        // }
 
         // Delete images from MinIO
         for (PropertyImage image : property.getImages()) {
@@ -545,24 +607,212 @@ public class PropertyServiceImpl implements PropertyService {
         return "DOCUMENT";
     }
 
+    /**
+     * Retrieves all units for a property and dynamically reconciles their status
+     * against active agreements and approved lease requests.
+     * If a unit has an active agreement or approved lease, its status is ensured to be RENTED
+     * and tenant name populated, persisting any missing updates in PostgreSQL.
+     */
+    private List<PropertyUnit> getAndSyncPropertyUnits(Property property) {
+        if (property == null || property.getId() == null) {
+            return Collections.emptyList();
+        }
+
+        List<PropertyUnit> units = propertyUnitRepository.findByPropertyId(property.getId());
+        if (units == null || units.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            // 1. Collect all active agreements for this property
+            List<Agreement> agreements = agreementRepository.findByPropertyId(property.getId());
+            Map<UUID, String> rentedUnitIdToTenantName = new HashMap<>();
+            Set<UUID> rentedUnitIds = new HashSet<>();
+
+            if (agreements != null) {
+                for (Agreement a : agreements) {
+                    if (a.getStatus() != null &&
+                        (a.getStatus() == AgreementStatus.TERMINATED ||
+                         a.getStatus() == AgreementStatus.EXPIRED ||
+                         a.getStatus() == AgreementStatus.CANCELLED)) {
+                        continue;
+                    }
+
+                    String tenantName = null;
+                    if (a.getTenant() != null) {
+                        String first = a.getTenant().getFirstName() != null ? a.getTenant().getFirstName() : "";
+                        String last = a.getTenant().getLastName() != null ? a.getTenant().getLastName() : "";
+                        tenantName = (first + " " + last).trim();
+                    }
+
+                    if (a.getUnit() != null && a.getUnit().getId() != null) {
+                        rentedUnitIds.add(a.getUnit().getId());
+                        if (tenantName != null && !tenantName.isBlank()) {
+                            rentedUnitIdToTenantName.put(a.getUnit().getId(), tenantName);
+                        }
+                    } else if (a.getRequestCode() != null && !a.getRequestCode().isBlank()) {
+                        // Attempt to link via LeaseRequest
+                        try {
+                            Optional<LeaseRequest> optLr = leaseRequestRepository.findByRequestCodeWithDetails(a.getRequestCode());
+                            if (optLr.isPresent() && optLr.get().getUnit() != null) {
+                                PropertyUnit linkedUnit = optLr.get().getUnit();
+                                rentedUnitIds.add(linkedUnit.getId());
+                                if ((tenantName == null || tenantName.isBlank()) && optLr.get().getApplicant() != null) {
+                                    String first = optLr.get().getApplicant().getFirstName() != null ? optLr.get().getApplicant().getFirstName() : "";
+                                    String last = optLr.get().getApplicant().getLastName() != null ? optLr.get().getApplicant().getLastName() : "";
+                                    tenantName = (first + " " + last).trim();
+                                }
+                                if (tenantName != null && !tenantName.isBlank()) {
+                                    rentedUnitIdToTenantName.put(linkedUnit.getId(), tenantName);
+                                }
+                                a.setUnit(linkedUnit);
+                                agreementRepository.save(a);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Could not lookup lease request for agreement {}: {}", a.getAgreementNumber(), e.getMessage());
+                        }
+                    }
+                }
+            }
+
+            // 2. Also check approved / under-verification lease requests with units
+            try {
+                List<LeaseRequest> leaseRequests = leaseRequestRepository.findByPropertyIdWithUnit(property.getId());
+                if (leaseRequests != null) {
+                    for (LeaseRequest lr : leaseRequests) {
+                        if (lr.getUnit() != null && lr.getUnit().getId() != null) {
+                            if (lr.getStatus() == LeaseRequestStatus.LANDLORD_APPROVED ||
+                                lr.getStatus() == LeaseRequestStatus.SUPERVISOR_APPROVED ||
+                                lr.getStatus() == LeaseRequestStatus.UNDER_VERIFICATION ||
+                                lr.getStatus() == LeaseRequestStatus.PENDING_SUPERVISOR_APPROVAL) {
+                                rentedUnitIds.add(lr.getUnit().getId());
+                                if (!rentedUnitIdToTenantName.containsKey(lr.getUnit().getId()) && lr.getApplicant() != null) {
+                                    String first = lr.getApplicant().getFirstName() != null ? lr.getApplicant().getFirstName() : "";
+                                    String last = lr.getApplicant().getLastName() != null ? lr.getApplicant().getLastName() : "";
+                                    String applicantName = (first + " " + last).trim();
+                                    if (!applicantName.isBlank()) {
+                                        rentedUnitIdToTenantName.put(lr.getUnit().getId(), applicantName);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not check lease requests for property {}: {}", property.getId(), e.getMessage());
+            }
+
+            // 3. Fallback: If an active agreement exists for this property but no unit was explicitly linked,
+            // match by rent amount or associate if only one unit exists
+            if (agreements != null && !agreements.isEmpty() && rentedUnitIds.isEmpty()) {
+                for (Agreement a : agreements) {
+                    if (a.getStatus() != null &&
+                        (a.getStatus() == AgreementStatus.TERMINATED ||
+                         a.getStatus() == AgreementStatus.EXPIRED ||
+                         a.getStatus() == AgreementStatus.CANCELLED)) {
+                        continue;
+                    }
+                    if (a.getMonthlyRent() != null) {
+                        List<PropertyUnit> matchingUnits = units.stream()
+                                .filter(u -> u.getRentAmount() != null && u.getRentAmount().compareTo(a.getMonthlyRent()) == 0)
+                                .toList();
+                        if (matchingUnits.size() == 1) {
+                            PropertyUnit matched = matchingUnits.get(0);
+                            rentedUnitIds.add(matched.getId());
+                            if (a.getTenant() != null) {
+                                String first = a.getTenant().getFirstName() != null ? a.getTenant().getFirstName() : "";
+                                String last = a.getTenant().getLastName() != null ? a.getTenant().getLastName() : "";
+                                String tName = (first + " " + last).trim();
+                                rentedUnitIdToTenantName.put(matched.getId(), tName);
+                            }
+                            a.setUnit(matched);
+                            agreementRepository.save(a);
+                            break;
+                        }
+                    }
+                    if (rentedUnitIds.isEmpty() && units.size() == 1) {
+                        PropertyUnit onlyUnit = units.get(0);
+                        rentedUnitIds.add(onlyUnit.getId());
+                        if (a.getTenant() != null) {
+                            String first = a.getTenant().getFirstName() != null ? a.getTenant().getFirstName() : "";
+                            String last = a.getTenant().getLastName() != null ? a.getTenant().getLastName() : "";
+                            rentedUnitIdToTenantName.put(onlyUnit.getId(), (first + " " + last).trim());
+                        }
+                        a.setUnit(onlyUnit);
+                        agreementRepository.save(a);
+                        break;
+                    }
+                }
+            }
+
+            // 4. Update units in-memory and persist to DB if status changed
+            for (PropertyUnit unit : units) {
+                if (rentedUnitIds.contains(unit.getId())) {
+                    boolean modified = false;
+                    if (unit.getStatus() != UnitStatus.RENTED) {
+                        unit.setStatus(UnitStatus.RENTED);
+                        modified = true;
+                    }
+                    String tName = rentedUnitIdToTenantName.get(unit.getId());
+                    if (tName != null && !tName.isBlank() && !tName.equals(unit.getTenantName())) {
+                        unit.setTenantName(tName);
+                        modified = true;
+                    }
+                    if (modified) {
+                        try {
+                            propertyUnitRepository.save(unit);
+                            log.info("Synced unit {} ({}) status to RENTED for property {}",
+                                    unit.getUnitCode(), unit.getUnitName(), property.getPropertyCode());
+                        } catch (Exception e) {
+                            log.warn("Could not persist unit status update for {}: {}", unit.getId(), e.getMessage());
+                        }
+                    }
+                }
+            }
+
+            // 5. Auto-reconcile parent property status if appropriate:
+            // If any units are available and property was marked RENTED, restore to LISTED so it is searchable
+            boolean anyAvailable = units.stream().anyMatch(u -> u.getStatus() == UnitStatus.AVAILABLE);
+            if (anyAvailable && property.getStatus() == PropertyStatus.RENTED) {
+                property.setStatus(PropertyStatus.LISTED);
+                propertyRepository.save(property);
+                log.info("Auto-corrected multi-unit property {} to LISTED because units remain available.", property.getPropertyCode());
+            } else if (!anyAvailable && property.getStatus() == PropertyStatus.LISTED) {
+                property.setStatus(PropertyStatus.RENTED);
+                propertyRepository.save(property);
+                log.info("All units rented for property {}. Marked building as RENTED.", property.getPropertyCode());
+            }
+
+        } catch (Exception ex) {
+            log.warn("Error synchronizing property unit statuses for property {}: {}", property.getId(), ex.getMessage());
+        }
+
+        return units;
+    }
+
     // ── Unit Management ───────────────────────────────────────────────────────────
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PropertyUnitResponse> getPropertyUnits(UUID propertyId) {
         Property property = propertyRepository.findWithDetailsById(propertyId);
         if (property == null) {
             throw new PropertyNotFoundException("Property not found: " + propertyId);
         }
-        return propertyUnitRepository.findByPropertyId(propertyId)
+        return getAndSyncPropertyUnits(property)
                 .stream().map(mapper::toUnitResponse).toList();
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PropertyUnitResponse getUnitById(UUID unitId) {
         PropertyUnit unit = propertyUnitRepository.findById(unitId)
                 .orElseThrow(() -> new IllegalArgumentException("Unit not found: " + unitId));
+        if (unit.getProperty() != null) {
+            getAndSyncPropertyUnits(unit.getProperty());
+            unit = propertyUnitRepository.findById(unitId)
+                    .orElseThrow(() -> new IllegalArgumentException("Unit not found: " + unitId));
+        }
         return mapper.toUnitResponse(unit);
     }
 

@@ -1,215 +1,159 @@
 package com.ethiorental.backend.agreement.entity;
 
 import com.ethiorental.backend.IAM.entity.Citizen;
-import com.ethiorental.backend.lease.entity.LeaseRequest;
+import com.ethiorental.backend.agreement.enums.AgreementStatus;
 import com.ethiorental.backend.property.entity.Property;
+import com.ethiorental.backend.property.entity.PropertyUnit;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "agreements")
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Agreement {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @UuidGenerator
+    private UUID id;
 
-    @Column(unique = true, nullable = false)
-    private String agreementCode;
+    @Column(unique = true, nullable = false, updatable = false)
+    private String agreementNumber;
 
-    @Column(nullable = false)
-    private String contractDate;
-
-    @Column(nullable = false)
-    private String contractNumber;
-
-    // Lease Request Reference
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lease_request_id", nullable = false)
-    private LeaseRequest leaseRequest;
-
-    @Column(nullable = false)
+    @Column(unique = true, nullable = false, updatable = false)
     private String requestCode;
 
-    // Landlord Information
+    @Column
+    private UUID leaseRequestId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "property_id", nullable = false)
+    private Property property;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unit_id")
+    private PropertyUnit unit;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Citizen tenant;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "landlord_id", nullable = false)
     private Citizen landlord;
 
     @Column(nullable = false)
-    private String landlordName;
+    private BigDecimal monthlyRent;
+
+    @Column
+    private BigDecimal securityDeposit;
+
+    @Column
+    private Integer advancePaymentMonths;
 
     @Column(nullable = false)
-    private String landlordSubCity;
+    private Integer leaseDurationMonths;
 
-    @Column(nullable = false)
-    private String landlordWoreda;
+    @Column
+    private LocalDate contractDate;
 
-    @Column(nullable = false)
-    private String landlordHouseNo;
+    @Column
+    private LocalDateTime startDate;
 
-    @Column(nullable = false)
-    private String landlordPhone;
+    @Column
+    private LocalDateTime endDate;
 
-    @Column(nullable = false)
-    private String landlordRegion;
+    @Column
+    private Integer monthlyPaymentDueDay;
 
-    @Column(nullable = false)
-    private String landlordCity;
-
-    @Column(nullable = false)
-    private String landlordSpecificPlace;
-
-    // Tenant Information
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Citizen tenant;
-
-    @Column(nullable = false)
-    private String tenantName;
-
-    @Column(nullable = false)
-    private String tenantSubCity;
-
-    @Column(nullable = false)
-    private String tenantWoreda;
-
-    @Column(nullable = false)
-    private String tenantHouseNo;
-
-    @Column(nullable = false)
-    private String tenantPhone;
-
-    @Column(nullable = false)
-    private String tenantRegion;
-
-    @Column(nullable = false)
-    private String tenantCity;
-
-    @Column(nullable = false)
-    private String tenantSpecificPlace;
-
-    // Property Information
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "property_id", nullable = false)
-    private Property property;
-
-    @Column(nullable = false)
-    private String propertyRegion;
-
-    @Column(nullable = false)
-    private String propertyCity;
-
-    @Column(nullable = false)
-    private String propertySubCity;
-
-    @Column(nullable = false)
-    private String propertyWoreda;
-
-    @Column(nullable = false)
-    private String propertySpecificPlace;
-
-    @Column(nullable = false)
-    private String propertyHouseNo;
-
-    @Column(nullable = false)
-    private String propertyOwnershipType;
-
-    // Rental Conditions
-    @Column(nullable = false)
-    private String propertyCondition;
-
-    @Column(nullable = false)
-    private BigDecimal monthlyRentInBirr;
-
-    @Column(nullable = false)
-    private String monthlyRentInWords;
-
-    @Column(nullable = false)
+    @Column
     private String utilitiesPaidBy;
 
-    // Payment Terms
-    @Column(nullable = false)
-    private String advancePaymentMonths;
-
-    @Column(nullable = false)
-    private BigDecimal advancePaymentBirr;
-
-    @Column(nullable = false)
-    private String advancePaymentWords;
-
-    @Column(nullable = false)
-    private String monthlyPaymentDueDay;
-
-    // Signatures
     @Column
-    private String landlordSignature;
+    private String propertyCondition;
+
+    @Column
+    private String propertyOwnershipType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AgreementStatus status;
+
+    @Builder.Default
+    @Column
+    private Boolean landlordSigned = false;
 
     @Column
     private LocalDateTime landlordSignedAt;
 
     @Column
-    private String tenantSignature;
+    private String landlordSignature;
+
+    @Builder.Default
+    @Column
+    private Boolean tenantSigned = false;
 
     @Column
     private LocalDateTime tenantSignedAt;
 
     @Column
-    private String officerName;
+    private String tenantSignature;
+
+    @Builder.Default
+    @Column
+    private Boolean officerVerified = false;
 
     @Column
-    private String officerSignature;
+    private LocalDateTime officerVerifiedAt;
 
     @Column
-    private LocalDateTime officerSignedAt;
+    private String officerEmail;
+
+    @Builder.Default
+    @Column
+    private Boolean supervisorApproved = false;
 
     @Column
-    private String witness1Name;
+    private LocalDateTime supervisorApprovedAt;
 
     @Column
-    private String witness1Signature;
+    private String supervisorEmail;
 
-    @Column
-    private LocalDateTime witness1SignedAt;
-
-    @Column
-    private String witness2Name;
-
-    @Column
-    private String witness2Signature;
-
-    @Column
-    private LocalDateTime witness2SignedAt;
-
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
-    private boolean landlordSigned = false;
+    @Column
+    private LocalDateTime cancellationRequestedAt;
 
-    @Column(nullable = false)
-    private boolean tenantSigned = false;
+    @Builder.Default
+    @Column
+    private Boolean cancellationRequestedByLandlord = false;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+        if (this.status == null) this.status = AgreementStatus.ACTIVE;
+        if (this.monthlyPaymentDueDay == null) this.monthlyPaymentDueDay = 5;
+        if (this.agreementNumber == null) {
+            this.agreementNumber = "AGR" + System.currentTimeMillis() + (int)(Math.random() * 1000);
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

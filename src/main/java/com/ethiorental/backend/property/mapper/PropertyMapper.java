@@ -37,6 +37,10 @@ public class PropertyMapper {
     }
 
     public PropertyResponse toPropertyResponse(Property p) {
+        return toPropertyResponse(p, p.getUnits());
+    }
+
+    public PropertyResponse toPropertyResponse(Property p, List<PropertyUnit> propertyUnits) {
         List<PropertyImageResponse> images = p.getImages() == null
                 ? Collections.emptyList()
                 : p.getImages().stream().map(this::toImageResponse).toList();
@@ -45,9 +49,9 @@ public class PropertyMapper {
                 ? Collections.emptyList()
                 : p.getOwnershipDocuments().stream().map(this::toDocResponse).toList();
 
-        List<PropertyUnitResponse> units = p.getUnits() == null
+        List<PropertyUnitResponse> units = propertyUnits == null
                 ? Collections.emptyList()
-                : p.getUnits().stream().map(this::toUnitResponse).toList();
+                : propertyUnits.stream().map(this::toUnitResponse).toList();
 
         return new PropertyResponse(
                 p.getId(),

@@ -32,9 +32,12 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
     @Query("SELECT p FROM Property p LEFT JOIN FETCH p.landlord LEFT JOIN FETCH p.address WHERE p.id = :id")
     Property findWithDetailsById(@org.springframework.data.repository.query.Param("id") UUID id);
 
-    /** Find property by property code with landlord and address eagerly loaded. */
-    @Query("SELECT p FROM Property p LEFT JOIN FETCH p.landlord LEFT JOIN FETCH p.address WHERE UPPER(p.propertyCode) = UPPER(:propertyCode)")
+    /** Find property by property code with landlord and address eagerly loaded (case-insensitive & trimmed). */
+    @Query("SELECT p FROM Property p LEFT JOIN FETCH p.landlord LEFT JOIN FETCH p.address WHERE TRIM(UPPER(p.propertyCode)) = TRIM(UPPER(:propertyCode))")
     Property findByPropertyCode(@org.springframework.data.repository.query.Param("propertyCode") String propertyCode);
+
+    @Query("SELECT p FROM Property p LEFT JOIN FETCH p.landlord LEFT JOIN FETCH p.address WHERE TRIM(UPPER(p.propertyCode)) = TRIM(UPPER(:propertyCode))")
+    List<Property> findByPropertyCodeMatches(@org.springframework.data.repository.query.Param("propertyCode") String propertyCode);
 
     // ── Reporting queries ─────────────────────────────────────────────────────
     long countByStatus(PropertyStatus status);

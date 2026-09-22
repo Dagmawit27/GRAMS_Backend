@@ -16,7 +16,13 @@ public interface LeaseRequestRepository extends JpaRepository<LeaseRequest, UUID
 
     List<LeaseRequest> findByApplicantId(UUID applicantId);
 
+    @Query("SELECT lr FROM LeaseRequest lr LEFT JOIN FETCH lr.landlord LEFT JOIN FETCH lr.property LEFT JOIN FETCH lr.unit WHERE lr.applicant.id = :applicantId")
+    List<LeaseRequest> findByApplicantIdWithDetails(@Param("applicantId") UUID applicantId);
+
     List<LeaseRequest> findByLandlordId(UUID landlordId);
+
+    @Query("SELECT lr FROM LeaseRequest lr LEFT JOIN FETCH lr.applicant LEFT JOIN FETCH lr.landlord LEFT JOIN FETCH lr.property LEFT JOIN FETCH lr.unit WHERE lr.landlord.id = :landlordId")
+    List<LeaseRequest> findByLandlordIdWithDetails(@Param("landlordId") UUID landlordId);
 
     List<LeaseRequest> findByPropertyId(UUID propertyId);
 
@@ -24,11 +30,17 @@ public interface LeaseRequestRepository extends JpaRepository<LeaseRequest, UUID
 
     List<LeaseRequest> findByStatus(LeaseRequestStatus status);
 
+    @Query("SELECT lr FROM LeaseRequest lr LEFT JOIN FETCH lr.unit LEFT JOIN FETCH lr.applicant WHERE lr.property.id = :propertyId")
+    List<LeaseRequest> findByPropertyIdWithUnit(@Param("propertyId") UUID propertyId);
+
     Optional<LeaseRequest> findByPropertyIdAndApplicantId(UUID propertyId, UUID applicantId);
 
     Optional<LeaseRequest> findByUnitIdAndApplicantId(UUID unitId, UUID applicantId);
 
     Optional<LeaseRequest> findByRequestCode(String requestCode);
+
+    @Query("SELECT lr FROM LeaseRequest lr LEFT JOIN FETCH lr.applicant LEFT JOIN FETCH lr.landlord LEFT JOIN FETCH lr.property LEFT JOIN FETCH lr.unit WHERE lr.requestCode = :requestCode")
+    Optional<LeaseRequest> findByRequestCodeWithDetails(@Param("requestCode") String requestCode);
 
     @Query("SELECT lr FROM LeaseRequest lr WHERE lr.applicant.id = :applicantId AND lr.status = :status")
     List<LeaseRequest> findByApplicantIdAndStatus(@Param("applicantId") UUID applicantId, @Param("status") LeaseRequestStatus status);
@@ -41,4 +53,13 @@ public interface LeaseRequestRepository extends JpaRepository<LeaseRequest, UUID
 
     @Query("SELECT COUNT(lr) FROM LeaseRequest lr WHERE lr.unit.id = :unitId AND lr.status = 'PENDING'")
     long countPendingRequestsForUnit(@Param("unitId") UUID unitId);
+
+    @Query("SELECT lr FROM LeaseRequest lr " +
+           "LEFT JOIN FETCH lr.applicant LEFT JOIN FETCH lr.landlord " +
+           "LEFT JOIN FETCH lr.property p LEFT JOIN FETCH p.address a LEFT JOIN FETCH lr.unit " +
+           "WHERE lr.status = :status AND LOWER(a.subCity) = LOWER(:subCity) AND a.woreda = :woreda")
+    List<LeaseRequest> findByStatusAndJurisdiction(
+        @Param("status") LeaseRequestStatus status,
+        @Param("subCity") String subCity,
+        @Param("woreda") String woreda);
 }

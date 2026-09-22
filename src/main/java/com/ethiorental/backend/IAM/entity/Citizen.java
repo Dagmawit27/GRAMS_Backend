@@ -46,13 +46,56 @@ public class Citizen {
     /** Employer / organization the citizen works at (e.g. "CBE", "Ethio Telecom") */
     private String worksOn;
 
-    /** Location fields for agreement form */
-    private String region;
+    /** City where the citizen resides */
     private String city;
+
+    /** Sub-city where the citizen resides */
     private String subCity;
+
+    /** Woreda where the citizen resides */
     private String woreda;
+
+    /** House number in Kebele */
     private String houseNumber;
-    private String specificPlace;
+
+    /** Taxpayer Identification Number (TIN) */
+    private String tinNumber;
+
+    /** Emergency contact person name */
+    private String emergencyContactName;
+
+    /** Emergency contact person phone number */
+    private String emergencyContactPhone;
+
+    /** Preferred payment method / active primary account key */
+    private String preferredPaymentMethod;
+
+    /** Primary Designated payout bank name (Account 1) */
+    private String bankName;
+
+    /** Primary Payout bank or mobile money account number (Account 1) */
+    private String accountNumber;
+
+    /** Primary Full legal name on bank / mobile money account (Account 1) */
+    private String accountHolderName;
+
+    /** Secondary payout bank name (Account 2) */
+    private String bankName2;
+
+    /** Secondary payout account number (Account 2) */
+    private String accountNumber2;
+
+    /** Secondary account holder name (Account 2) */
+    private String accountHolderName2;
+
+    /** Tertiary payout bank name (Account 3) */
+    private String bankName3;
+
+    /** Tertiary payout account number (Account 3) */
+    private String accountNumber3;
+
+    /** Tertiary account holder name (Account 3) */
+    private String accountHolderName3;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -65,16 +108,5 @@ public class Citizen {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.status == null) this.status = CitizenStatus.ACTIVE;
-    }
-
-    public String getFullName() {
-        if (middleName != null && !middleName.isEmpty()) {
-            return firstName + " " + middleName + " " + lastName;
-        }
-        return firstName + " " + lastName;
-    }
-
-    public String getPhoneNumber() {
-        return phone;
     }
 }

@@ -65,11 +65,54 @@ public class LeaseRequest {
     @Column
     private LocalDateTime expiresAt;
 
+    @Builder.Default
+    @Column
+    private Boolean landlordSigned = false;
+
+    @Column
+    private LocalDateTime landlordSignedAt;
+
+    @Builder.Default
+    @Column
+    private Boolean tenantSigned = false;
+
+    @Column
+    private LocalDateTime tenantSignedAt;
+
+    @Builder.Default
+    @Column
+    private Boolean supervisorSigned = false;
+
+    @Column
+    private LocalDateTime supervisorSignedAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.status == null) this.status = LeaseRequestStatus.PENDING;
+        if (this.landlordSigned == null) this.landlordSigned = false;
+        if (this.tenantSigned == null) this.tenantSigned = false;
+        if (this.supervisorSigned == null) this.supervisorSigned = false;
         // generate request code: LR + timestamp + random
         this.requestCode = "LR" + System.currentTimeMillis() + (int)(Math.random() * 1000);
+    }
+
+    @PostLoad
+    protected void onPostLoad() {
+        if (this.landlordSigned == null) this.landlordSigned = false;
+        if (this.tenantSigned == null) this.tenantSigned = false;
+        if (this.supervisorSigned == null) this.supervisorSigned = false;
+    }
+
+    public Boolean getLandlordSigned() {
+        return landlordSigned != null && landlordSigned;
+    }
+
+    public Boolean getTenantSigned() {
+        return tenantSigned != null && tenantSigned;
+    }
+
+    public Boolean getSupervisorSigned() {
+        return supervisorSigned != null && supervisorSigned;
     }
 }

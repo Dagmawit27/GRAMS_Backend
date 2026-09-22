@@ -1,5 +1,6 @@
 package com.ethiorental.backend.IAM.repository;
 
+import com.ethiorental.backend.IAM.entity.Citizen;
 import com.ethiorental.backend.IAM.entity.CitizenCredential;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -10,5 +11,6 @@ import java.util.UUID;
 @Repository
 public interface CitizenCredentialRepository extends JpaRepository<CitizenCredential, UUID> {
     Optional<CitizenCredential> findByEmail(String email);
+    Optional<CitizenCredential> findByCitizen(Citizen citizen);
     boolean existsByEmail(String email);
 }

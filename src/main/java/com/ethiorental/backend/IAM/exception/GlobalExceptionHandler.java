@@ -12,6 +12,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -80,7 +82,15 @@ public class GlobalExceptionHandler {
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("error", "Bad Request");
-        body.put("message", ex.getMessage());
+        
+        // Provide user-friendly message for enum-related errors
+        String message = ex.getMessage();
+        if (message != null && message.contains("No enum constant")) {
+            body.put("message", "System data inconsistency detected. Please contact support to resolve this issue.");
+        } else {
+            body.put("message", ex.getMessage());
+        }
+        
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
@@ -144,17 +154,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.error("Data integrity violation encountered: ", ex);
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.CONFLICT.value());
         body.put("error", "Conflict");
         
-        // Check if it's a duplicate title deed number error
-        String message = ex.getMessage();
+        String message = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
         if (message != null && message.contains("title_deed_number")) {
             body.put("message", "This Title Deed Number is already registered in the system. Please enter a different Title Deed Number.");
         } else if (message != null && message.contains("property_code")) {
             body.put("message", "A property with this code already exists.");
+        } else if (message != null && (message.contains("check constraint") || message.contains("status"))) {
+            body.put("message", "Database constraint violation on status: " + message);
         } else {
             body.put("message", "A record with this information already exists in the system.");
         }
