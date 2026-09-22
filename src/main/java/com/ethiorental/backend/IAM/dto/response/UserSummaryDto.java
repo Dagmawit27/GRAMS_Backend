@@ -28,7 +28,36 @@ public class UserSummaryDto {
     private String employeeNumber;
     private String positionTitle;
     private String worksOn;
+    /** Location fields for citizens */
+    private String city;
     /** Jurisdiction — only populated for GOVERNMENT_EMPLOYEE */
     private String subCity;
     private String woreda;
+
+    /** National ID / Fayda ID */
+    private String nationalId;
+    /** House number */
+    private String houseNumber;
+    /** Taxpayer Identification Number */
+    private String tinNumber;
+    /** Emergency contact person name */
+    private String emergencyContactName;
+    /** Emergency contact person phone number */
+    private String emergencyContactPhone;
+
+    /** Landlord Payout Settings (Account 1 - Primary) */
+    private String preferredPaymentMethod;
+    private String bankName;
+    private String accountNumber;
+    private String accountHolderName;
+
+    /** Landlord Payout Settings (Account 2 - Secondary) */
+    private String bankName2;
+    private String accountNumber2;
+    private String accountHolderName2;
+
+    /** Landlord Payout Settings (Account 3 - Tertiary) */
+    private String bankName3;
+    private String accountNumber3;
+    private String accountHolderName3;
 }

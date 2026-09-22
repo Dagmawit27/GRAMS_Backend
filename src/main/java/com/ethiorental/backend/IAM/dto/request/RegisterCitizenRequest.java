@@ -38,6 +38,15 @@ public class RegisterCitizenRequest {
     /** Employer / organization (e.g. "CBE", "Ethio Telecom") */
     private String worksOn;
 
+    /** City where the citizen resides */
+    private String city;
+
+    /** Sub-city where the citizen resides */
+    private String subCity;
+
+    /** Woreda where the citizen resides */
+    private String woreda;
+
     // LANDLORD, TENANT, or leave null for default CITIZEN
     private String rolePreference;
 }

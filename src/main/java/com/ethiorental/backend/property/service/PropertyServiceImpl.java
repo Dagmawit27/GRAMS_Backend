@@ -16,6 +16,7 @@ import com.ethiorental.backend.property.enums.UnitStatus;
 import com.ethiorental.backend.property.event.PropertyRegisteredEvent;
 import com.ethiorental.backend.property.event.PropertyVerifiedEvent;
 import com.ethiorental.backend.property.event.PropertyDeletedEvent;
+import com.ethiorental.backend.property.event.PropertyApprovedEvent;
 import com.ethiorental.backend.property.exception.PropertyNotFoundException;
 import com.ethiorental.backend.property.mapper.PropertyMapper;
 import com.ethiorental.backend.property.repository.*;
@@ -211,28 +212,71 @@ public class PropertyServiceImpl implements PropertyService {
         if (property == null) {
             throw new PropertyNotFoundException("Property not found: " + id);
         }
+        List<PropertyUnit> units = propertyUnitRepository.findByPropertyId(property.getId());
+        if (units != null && !units.isEmpty()) {
+            property.setUnits(units);
+        }
         return mapper.toPropertyResponse(property);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PropertyResponse getPropertyByCode(String propertyCode) {
         Property property = propertyRepository.findByPropertyCode(propertyCode);
         if (property == null) {
             throw new PropertyNotFoundException("Property not found with code: " + propertyCode);
         }
-        // Only return properties that are LISTED (approved by supervisor and ready for public viewing)
-        if (property.getStatus() != PropertyStatus.LISTED) {
-            throw new PropertyNotFoundException("Property not available for public viewing with code: " + propertyCode);
+
+        List<PropertyUnit> units = propertyUnitRepository.findByPropertyId(property.getId());
+        if (units != null && !units.isEmpty()) {
+            // Multi-unit property (e.g. shopping mall / commercial plaza / apartments)
+            long availableUnits = units.stream().filter(u -> u.getStatus() == UnitStatus.AVAILABLE).count();
+            if (availableUnits == 0) {
+                // All units in this building are rented
+                if (property.getStatus() != PropertyStatus.RENTED) {
+                    property.setStatus(PropertyStatus.RENTED);
+                    propertyRepository.save(property);
+                }
+                throw new PropertyNotFoundException("All units in this building are currently rented and unavailable with code: " + propertyCode);
+            }
+
+            // At least one unit is available in this building!
+            // If the building status was previously marked RENTED by mistake, auto-heal back to LISTED
+            if (property.getStatus() == PropertyStatus.RENTED) {
+                property.setStatus(PropertyStatus.LISTED);
+                propertyRepository.save(property);
+                log.info("Auto-restored multi-unit property {} to LISTED since {} units are available", propertyCode, availableUnits);
+            }
+
+            if (property.getStatus() != PropertyStatus.LISTED) {
+                throw new PropertyNotFoundException("Property not available for public viewing with code: " + propertyCode);
+            }
+
+            property.setUnits(units);
+            return mapper.toPropertyResponse(property);
+        } else {
+            // Single house property (no sub-units)
+            if (property.getStatus() == PropertyStatus.RENTED) {
+                throw new PropertyNotFoundException("This property is currently rented and not available for new lease applications.");
+            }
+            if (property.getStatus() != PropertyStatus.LISTED) {
+                throw new PropertyNotFoundException("Property not available for public viewing with code: " + propertyCode);
+            }
+            return mapper.toPropertyResponse(property);
         }
-        return mapper.toPropertyResponse(property);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<PropertyResponse> getPropertiesByStatus(PropertyStatus status) {
-        return propertyRepository.findByStatus(status)
-                .stream().map(mapper::toPropertyResponse).toList();
+        List<Property> properties = propertyRepository.findByStatus(status);
+        for (Property p : properties) {
+            List<PropertyUnit> units = propertyUnitRepository.findByPropertyId(p.getId());
+            if (units != null && !units.isEmpty()) {
+                p.setUnits(units);
+            }
+        }
+        return properties.stream().map(mapper::toPropertyResponse).toList();
     }
 
     @Override
@@ -323,6 +367,28 @@ public class PropertyServiceImpl implements PropertyService {
             eventPublisher.publishEvent(event);
         }
 
+        // Publish PropertyApprovedEvent when woreda_supervisor approves property (LISTED)
+        if (newStatus == PropertyStatus.LISTED && callerRoles.contains("WOREDA_SUPERVISOR")) {
+            log.info("Preparing to publish PropertyApprovedEvent for propertyCode: {}, landlordEmail: {}", 
+                     saved.getPropertyCode(), saved.getLandlord().getEmail());
+            PropertyApprovedEvent event = new PropertyApprovedEvent(
+                this,
+                saved.getId(),
+                saved.getPropertyCode(),
+                saved.getTitle(),
+                saved.getPropertyType(),
+                saved.getAddress().getCity(),
+                saved.getAddress().getSubCity(),
+                saved.getAddress().getWoreda(),
+                officer.getId().toString(),
+                officer.getFirstName() + " " + officer.getLastName(),
+                saved.getLandlord().getId().toString(),
+                saved.getLandlord().getEmail()
+            );
+            eventPublisher.publishEvent(event);
+            log.info("PropertyApprovedEvent published for propertyCode: {}", saved.getPropertyCode());
+        }
+
         // Determine correct audit action based on the new status
         AuditAction action = switch (newStatus) {
             case VERIFIED, LISTED -> AuditAction.VERIFY;
@@ -359,9 +425,9 @@ public class PropertyServiceImpl implements PropertyService {
         }
 
         // Only allow deletion if status is PENDING
-        if (property.getStatus() != PropertyStatus.PENDING) {
-            throw new IllegalStateException("Only pending properties can be deleted. Current status: " + property.getStatus());
-        }
+        // if (property.getStatus() != PropertyStatus.PENDING) {
+        //     throw new IllegalStateException("Only pending properties can be deleted. Current status: " + property.getStatus());
+        // }
 
         // Delete images from MinIO
         for (PropertyImage image : property.getImages()) {

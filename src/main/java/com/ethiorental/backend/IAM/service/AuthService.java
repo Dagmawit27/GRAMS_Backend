@@ -70,6 +70,9 @@ public class AuthService {
                     .phone(req.getPhoneNumber())
                     .email(req.getEmail())
                     .worksOn(req.getWorksOn())
+                    .city(req.getCity())
+                    .subCity(req.getSubCity())
+                    .woreda(req.getWoreda())
                     .status(CitizenStatus.ACTIVE)
                     .build();
             citizenRepository.save(citizen);
@@ -368,10 +371,28 @@ public class AuthService {
                 .phoneNumber(c.getPhone())
                 .email(c.getEmail())
                 .worksOn(c.getWorksOn())
+                .city(c.getCity())
+                .subCity(c.getSubCity())
+                .woreda(c.getWoreda())
                 .createdAt(c.getCreatedAt())
                 .roles(roles)
                 .userType("CITIZEN")
                 .governmentEmployee(false)
+                .nationalId(c.getNationalId())
+                .houseNumber(c.getHouseNumber())
+                .tinNumber(c.getTinNumber())
+                .emergencyContactName(c.getEmergencyContactName())
+                .emergencyContactPhone(c.getEmergencyContactPhone())
+                .preferredPaymentMethod(c.getPreferredPaymentMethod())
+                .bankName(c.getBankName())
+                .accountNumber(c.getAccountNumber())
+                .accountHolderName(c.getAccountHolderName())
+                .bankName2(c.getBankName2())
+                .accountNumber2(c.getAccountNumber2())
+                .accountHolderName2(c.getAccountHolderName2())
+                .bankName3(c.getBankName3())
+                .accountNumber3(c.getAccountNumber3())
+                .accountHolderName3(c.getAccountHolderName3())
                 .build();
     }
 

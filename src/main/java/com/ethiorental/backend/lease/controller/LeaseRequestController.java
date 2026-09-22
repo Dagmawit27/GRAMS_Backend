@@ -3,6 +3,7 @@ package com.ethiorental.backend.lease.controller;
 import com.ethiorental.backend.lease.dto.LeaseRequestRequest;
 import com.ethiorental.backend.lease.dto.LeaseRequestResponse;
 import com.ethiorental.backend.lease.dto.LeaseStatusUpdateRequest;
+import com.ethiorental.backend.lease.enums.LeaseRequestStatus;
 import com.ethiorental.backend.lease.service.LeaseRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import com.ethiorental.backend.IAM.entity.GovernmentEmployee;
+import com.ethiorental.backend.IAM.repository.GovernmentEmployeeRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -21,6 +25,7 @@ import java.util.UUID;
 public class LeaseRequestController {
 
     private final LeaseRequestService leaseRequestService;
+    private final GovernmentEmployeeRepository governmentEmployeeRepository;
 
     /**
      * Submit a new lease application for a property or unit.
@@ -83,12 +88,25 @@ public class LeaseRequestController {
      * Cancel a lease request - applicant only.
      */
     @PatchMapping("/{requestCode}/cancel")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('TENANT','CITIZEN','BOTH')")
     public ResponseEntity<Void> cancelLeaseRequest(
             @PathVariable String requestCode,
             @AuthenticationPrincipal UserDetails userDetails) {
         
         leaseRequestService.cancelLeaseRequest(requestCode, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Delete a cancelled lease request - applicant only.
+     */
+    @DeleteMapping("/{requestCode}")
+    @PreAuthorize("hasAnyRole('TENANT','CITIZEN','BOTH')")
+    public ResponseEntity<Void> deleteLeaseRequest(
+            @PathVariable String requestCode,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        leaseRequestService.deleteLeaseRequest(requestCode, userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }
 
@@ -114,5 +132,90 @@ public class LeaseRequestController {
             @AuthenticationPrincipal UserDetails userDetails) {
         
         return ResponseEntity.ok(leaseRequestService.getPendingRequestsForUnit(unitId, userDetails.getUsername()));
+    }
+
+    /**
+     * Sign agreement using password - landlord or tenant.
+     */
+    @PostMapping("/{requestCode}/sign-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LeaseRequestResponse> signAgreementWithPassword(
+            @PathVariable String requestCode,
+            @RequestBody String password,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        return ResponseEntity.ok(leaseRequestService.signAgreementWithPassword(requestCode, password, userDetails.getUsername()));
+    }
+
+    /**
+     * Sign agreement using OTP - landlord or tenant.
+     */
+    @PostMapping("/{requestCode}/sign-otp")
+    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    public ResponseEntity<LeaseRequestResponse> signAgreementWithOtp(
+            @PathVariable String requestCode,
+            @RequestBody String otp,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        return ResponseEntity.ok(leaseRequestService.signAgreementWithOtp(requestCode, otp, userDetails.getUsername()));
+    }
+
+    /**
+     * Verify lease request - officer only.
+     */
+    @PostMapping("/{requestCode}/verify")
+    @PreAuthorize("hasAnyRole('WOREDA_OFFICER','GOVERNMENT_EMPLOYEE')")
+    public ResponseEntity<LeaseRequestResponse> verifyLeaseRequest(
+            @PathVariable String requestCode,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        return ResponseEntity.ok(leaseRequestService.verifyLeaseRequest(requestCode, userDetails.getUsername()));
+    }
+
+    /**
+     * Approve lease request - supervisor only.
+     */
+    @PostMapping("/{requestCode}/approve")
+    @PreAuthorize("hasAnyRole('WOREDA_SUPERVISOR','GOVERNMENT_EMPLOYEE')")
+    public ResponseEntity<LeaseRequestResponse> approveLeaseRequest(
+            @PathVariable String requestCode,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        return ResponseEntity.ok(leaseRequestService.approveLeaseRequest(requestCode, userDetails.getUsername()));
+    }
+
+    /**
+     * Get lease requests by status - filtered by officer's assigned jurisdiction.
+     */
+    @GetMapping("/status/{status}")
+    @PreAuthorize("hasAnyRole('WOREDA_OFFICER','WOREDA_SUPERVISOR','SUB_CITY_ADMINISTRATOR','CITY_ADMINISTRATOR','GOVERNMENT_EMPLOYEE')")
+    public ResponseEntity<List<LeaseRequestResponse>> getLeaseRequestsByStatus(
+            @PathVariable String status,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        LeaseRequestStatus leaseRequestStatus = LeaseRequestStatus.fromString(status);
+
+        if (userDetails != null && userDetails.getUsername() != null) {
+            String email = userDetails.getUsername();
+            Optional<GovernmentEmployee> employeeOpt = governmentEmployeeRepository.findByEmail(email);
+            if (employeeOpt.isPresent()) {
+                GovernmentEmployee emp = employeeOpt.get();
+                if (emp.getOffice() != null) {
+                    String officeType = emp.getOffice().getOfficeType();
+                    // City level / HEAD_OFFICE sees all
+                    if ("HEAD_OFFICE".equalsIgnoreCase(officeType)) {
+                        return ResponseEntity.ok(leaseRequestService.getLeaseRequestsByStatus(leaseRequestStatus));
+                    }
+                    String subCity = emp.getOffice().getSubCity();
+                    String woreda = emp.getOffice().getWoreda();
+                    if (subCity != null && !subCity.isBlank() && woreda != null && !woreda.isBlank()) {
+                        return ResponseEntity.ok(
+                                leaseRequestService.getLeaseRequestsByStatusAndJurisdiction(leaseRequestStatus, subCity, woreda));
+                    }
+                }
+            }
+        }
+        
+        return ResponseEntity.ok(leaseRequestService.getLeaseRequestsByStatus(leaseRequestStatus));
     }
 }

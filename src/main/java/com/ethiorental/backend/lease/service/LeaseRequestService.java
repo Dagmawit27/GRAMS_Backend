@@ -28,9 +28,30 @@ public interface LeaseRequestService {
     /** Cancel a lease request - applicant only. */
     void cancelLeaseRequest(String requestCode, String applicantEmail);
 
+    /** Delete a cancelled lease request - applicant only. */
+    void deleteLeaseRequest(String requestCode, String applicantEmail);
+
     /** Get pending lease requests for a property. */
     List<LeaseRequestResponse> getPendingRequestsForProperty(UUID propertyId, String landlordEmail);
 
     /** Get pending lease requests for a specific unit. */
     List<LeaseRequestResponse> getPendingRequestsForUnit(UUID unitId, String landlordEmail);
+
+    /** Sign agreement using password - landlord or tenant. */
+    LeaseRequestResponse signAgreementWithPassword(String requestCode, String password, String userEmail);
+
+    /** Sign agreement using OTP - landlord or tenant. */
+    LeaseRequestResponse signAgreementWithOtp(String requestCode, String otp, String userEmail);
+
+    /** Verify lease request - officer only. */
+    LeaseRequestResponse verifyLeaseRequest(String requestCode, String officerEmail);
+
+    /** Approve lease request - supervisor only. */
+    LeaseRequestResponse approveLeaseRequest(String requestCode, String supervisorEmail);
+
+    /** Get lease requests by status - for officers/supervisors. */
+    List<LeaseRequestResponse> getLeaseRequestsByStatus(LeaseRequestStatus status);
+
+    /** Get lease requests by status and jurisdiction - for woreda officers/supervisors. */
+    List<LeaseRequestResponse> getLeaseRequestsByStatusAndJurisdiction(LeaseRequestStatus status, String subCity, String woreda);
 }

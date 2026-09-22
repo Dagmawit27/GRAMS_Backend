@@ -201,5 +201,34 @@ public class RoleInitializerService implements CommandLineRunner {
                             .employee(supervisor).role(role).build()));
             log.info("Bootstrapped sample Woreda Supervisor: {}", supervisorEmail);
         }
+
+        // ── 8. Bootstrap default Tax Officer ─────────────────────────────────
+        String taxOfficerEmail = "taxOfficer@gmail.com";
+        if (!employeeCredentialRepository.existsByEmail(taxOfficerEmail)) {
+            GovernmentEmployee taxOfficer = GovernmentEmployee.builder()
+                    .employeeNumber("EMP-TAX-01")
+                    .office(adminOffice)
+                    .firstName("Dawit")
+                    .middleName("Mengesha")
+                    .lastName("Alemu")
+                    .gender(Gender.MALE)
+                    .phone("+251911223344")
+                    .email(taxOfficerEmail)
+                    .position("Senior Rental Income Tax Assessor")
+                    .status(EmployeeStatus.ACTIVE)
+                    .build();
+            employeeRepository.save(taxOfficer);
+
+            employeeCredentialRepository.save(EmployeeCredential.builder()
+                    .employee(taxOfficer)
+                    .email(taxOfficerEmail)
+                    .passwordHash(passwordEncoder.encode("12345678"))
+                    .build());
+
+            roleRepository.findByRoleName("TAX_OFFICER").ifPresent(role ->
+                    employeeRoleRepository.save(EmployeeRole.builder()
+                            .employee(taxOfficer).role(role).build()));
+            log.info("Bootstrapped default Tax Officer: {}", taxOfficerEmail);
+        }
     }
 }

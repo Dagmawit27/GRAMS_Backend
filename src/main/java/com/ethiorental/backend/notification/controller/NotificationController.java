@@ -64,6 +64,12 @@ public class NotificationController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/preferences")
+    public ResponseEntity<java.util.List<NotificationPreference>> getPreferences(@AuthenticationPrincipal UserDetails userDetails) {
+        String userId = getUserId(userDetails);
+        return ResponseEntity.ok(notificationService.getUserPreferences(userId));
+    }
+
     @PutMapping("/preferences")
     public ResponseEntity<NotificationPreference> updatePreferences(
             @AuthenticationPrincipal UserDetails userDetails,
