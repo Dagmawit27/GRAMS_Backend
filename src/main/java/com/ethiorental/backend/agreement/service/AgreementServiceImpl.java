@@ -48,6 +48,8 @@ public class AgreementServiceImpl implements AgreementService {
         BigDecimal securityDeposit = monthlyRent.multiply(BigDecimal.valueOf(2));
 
         String agreementNumber = "AGR" + System.currentTimeMillis() + (int)(Math.random() * 1000);
+        LocalDateTime now = LocalDateTime.now();
+        int dueDay = now.getDayOfMonth();
 
         Agreement agreement = Agreement.builder()
                 .agreementNumber(agreementNumber)
@@ -61,10 +63,13 @@ public class AgreementServiceImpl implements AgreementService {
                 .securityDeposit(securityDeposit)
                 .advancePaymentMonths(2)
                 .leaseDurationMonths(durationMonths)
-                .contractDate(LocalDate.now())
-                .startDate(LocalDateTime.now())
-                .endDate(LocalDateTime.now().plusMonths(durationMonths))
-                .monthlyPaymentDueDay(1)
+                .contractDate(now.toLocalDate())
+                .startDate(now)
+                .endDate(now.plusMonths(durationMonths))
+                .monthlyPaymentDueDay(dueDay)
+                .totalMonthsPaid(0)
+                .paidThroughDate(null)
+                .nextPaymentDueDate(now.toLocalDate())
                 .utilitiesPaidBy("TENANT")
                 .propertyCondition("GOOD")
                 .propertyOwnershipType("PRIVATE")
@@ -245,6 +250,11 @@ public class AgreementServiceImpl implements AgreementService {
                 .propertyCondition(a.getPropertyCondition())
                 .propertyOwnershipType(a.getPropertyOwnershipType())
                 .status(a.getStatus() != null ? a.getStatus().name() : "ACTIVE")
+                .totalMonthsPaid(a.getTotalMonthsPaid() != null ? a.getTotalMonthsPaid() : 0)
+                .paidThroughDate(a.getPaidThroughDate())
+                .nextPaymentDueDate(a.getNextPaymentDueDate() != null ? a.getNextPaymentDueDate() : (a.getStartDate() != null ? a.getStartDate().toLocalDate() : null))
+                .cancellationRequestedAt(a.getCancellationRequestedAt())
+                .cancellationRequestedByLandlord(a.getCancellationRequestedByLandlord())
                 // Signatures
                 .landlordSigned(a.getLandlordSigned())
                 .landlordSignedAt(a.getLandlordSignedAt())
@@ -355,5 +365,34 @@ public class AgreementServiceImpl implements AgreementService {
         }
         agreementRepository.save(agreement);
         log.info("Agreement {} cancelled. Property released.", agreementNumber);
+    }
+
+    @Override
+    @Transactional
+    public void tenantCancelAgreement(String agreementNumber, String tenantEmail) {
+        Agreement agreement = agreementRepository.findByAgreementNumber(agreementNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Agreement not found: " + agreementNumber));
+
+        if (agreement.getTenant() == null || !agreement.getTenant().getEmail().equalsIgnoreCase(tenantEmail)) {
+            throw new IllegalArgumentException("Only the tenant can cancel this agreement.");
+        }
+
+        if (agreement.getStatus() != AgreementStatus.ACTIVE && agreement.getStatus() != AgreementStatus.CANCELLATION_REQUESTED) {
+            throw new IllegalStateException("Only active agreements can be cancelled. Current status: " + agreement.getStatus());
+        }
+
+        agreement.setStatus(AgreementStatus.CANCELLED);
+
+        // Release property back to LISTED
+        if (agreement.getProperty() != null) {
+            agreement.getProperty().setStatus(PropertyStatus.LISTED);
+            propertyRepository.save(agreement.getProperty());
+        }
+        if (agreement.getUnit() != null) {
+            agreement.getUnit().setStatus(UnitStatus.AVAILABLE);
+            propertyUnitRepository.save(agreement.getUnit());
+        }
+        agreementRepository.save(agreement);
+        log.info("Tenant {} cancelled agreement {}. Property released.", tenantEmail, agreementNumber);
     }
 }

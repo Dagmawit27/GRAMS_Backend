@@ -29,6 +29,13 @@ public interface AgreementRepository extends JpaRepository<Agreement, UUID> {
 
     List<Agreement> findByStatus(AgreementStatus status);
 
+    @Query("SELECT DISTINCT a FROM Agreement a " +
+           "LEFT JOIN FETCH a.tenant " +
+           "LEFT JOIN FETCH a.landlord " +
+           "LEFT JOIN FETCH a.property " +
+           "WHERE a.status = :status")
+    List<Agreement> findByStatusWithDetails(@Param("status") AgreementStatus status);
+
     List<Agreement> findByStatusOrderByCreatedAtDesc(AgreementStatus status);
 
     List<Agreement> findAllByOrderByCreatedAtDesc();

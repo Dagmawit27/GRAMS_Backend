@@ -1,4 +1,4 @@
-﻿package com.ethiorental.backend.agreement.scheduler;
+package com.ethiorental.backend.agreement.scheduler;
 
 import com.ethiorental.backend.agreement.entity.Agreement;
 import com.ethiorental.backend.agreement.enums.AgreementStatus;

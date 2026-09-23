@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -232,15 +233,60 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setPaymentDate(LocalDateTime.now());
             if (verifyRes.getData().getReference() != null) {
                 payment.setChapaReference(verifyRes.getData().getReference());
+            } else if (payment.getChapaReference() == null) {
+                payment.setChapaReference("CHAPA-SIM-" + System.currentTimeMillis());
             }
-            if (verifyRes.getData().getMethod() != null) {
+            if (verifyRes.getData().getMethod() != null && (payment.getPaymentMethod() == null || payment.getPaymentMethod().isBlank() || "Chapa Gateway".equalsIgnoreCase(payment.getPaymentMethod()))) {
                 payment.setPaymentMethod(verifyRes.getData().getMethod());
             }
 
-            // Ensure agreement is marked ACTIVE
+            // Ensure agreement is marked ACTIVE and advance payment state tracking
             if (payment.getAgreement() != null) {
-                payment.getAgreement().setStatus(AgreementStatus.ACTIVE);
-                agreementRepository.save(payment.getAgreement());
+                Agreement agr = payment.getAgreement();
+                agr.setStatus(AgreementStatus.ACTIVE);
+
+                int advMonths = agr.getAdvancePaymentMonths() != null && agr.getAdvancePaymentMonths() > 0
+                        ? agr.getAdvancePaymentMonths() : 2;
+                LocalDate start = agr.getStartDate() != null
+                        ? agr.getStartDate().toLocalDate()
+                        : (agr.getContractDate() != null ? agr.getContractDate() : LocalDate.now());
+
+                if (agr.getMonthlyPaymentDueDay() == null) {
+                    agr.setMonthlyPaymentDueDay(start.getDayOfMonth());
+                }
+
+                if (agr.getTotalMonthsPaid() == null || agr.getTotalMonthsPaid() < advMonths) {
+                    // Initial Advance Rent payment completion
+                    agr.setTotalMonthsPaid(advMonths);
+                    LocalDate paidThrough = start.plusMonths(advMonths);
+                    agr.setPaidThroughDate(paidThrough);
+                    agr.setNextPaymentDueDate(paidThrough);
+                    log.info("Advance rent ({} months) marked completed for agreement {}. Paid through: {}, Next due: {}",
+                            advMonths, agr.getAgreementNumber(), paidThrough, paidThrough);
+                } else {
+                    // Recurring monthly rent payment
+                    int monthsPaid = 1;
+                    if (agr.getMonthlyRent() != null && agr.getMonthlyRent().compareTo(BigDecimal.ZERO) > 0 && payment.getAmount() != null) {
+                        try {
+                            BigDecimal divided = payment.getAmount().divideToIntegralValue(agr.getMonthlyRent());
+                            if (divided.intValue() > 0) {
+                                monthsPaid = divided.intValue();
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    int newTotalMonths = agr.getTotalMonthsPaid() + monthsPaid;
+                    agr.setTotalMonthsPaid(newTotalMonths);
+                    LocalDate baseDate = agr.getPaidThroughDate() != null
+                            ? agr.getPaidThroughDate()
+                            : start.plusMonths(agr.getTotalMonthsPaid());
+                    LocalDate newPaidThrough = baseDate.plusMonths(monthsPaid);
+                    agr.setPaidThroughDate(newPaidThrough);
+                    agr.setNextPaymentDueDate(newPaidThrough);
+                    log.info("Recurring rent (+{} month(s)) marked completed for agreement {}. Total months paid: {}, Paid through: {}, Next due: {}",
+                            monthsPaid, agr.getAgreementNumber(), newTotalMonths, newPaidThrough, newPaidThrough);
+                }
+
+                agreementRepository.save(agr);
             }
 
             paymentRepository.save(payment);

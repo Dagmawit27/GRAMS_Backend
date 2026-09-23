@@ -113,4 +113,18 @@ public class AgreementController {
                 "message", "Agreement cancelled successfully. Property is now available for lease."
         ));
     }
+
+    /**
+     * Tenant cancels active agreement immediately. Immediately cancels agreement and releases property.
+     */
+    @PostMapping("/{agreementNumber}/tenant-cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<java.util.Map<String, String>> tenantCancelAgreement(
+            @PathVariable String agreementNumber,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        agreementService.tenantCancelAgreement(agreementNumber, userDetails.getUsername());
+        return ResponseEntity.ok(java.util.Map.of(
+                "message", "Agreement cancelled successfully by tenant. Property is now available for lease."
+        ));
+    }
 }

@@ -30,4 +30,6 @@ public interface AgreementService {
     void requestCancellation(String agreementNumber, String landlordEmail);
 
     void acceptCancellation(String agreementNumber, String tenantEmail);
+
+    void tenantCancelAgreement(String agreementNumber, String tenantEmail);
 }

@@ -100,8 +100,10 @@ public class SecurityConfig {
                 // Reports — admin and auditor roles only (method security also enforces per-endpoint)
                 .requestMatchers("/api/v1/reports/**").hasAnyRole(
                         "SYSTEM_ADMINISTRATOR", "CITY_ADMINISTRATOR", "AUDITOR")
-                // Public Chapa payment webhook
+                // Public Chapa payment webhook & payment verification settlement
                 .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/payments/verify/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/payments/trigger-reminders").permitAll()
                 // SSE notifications — permitAll for now (EventSource doesn't support Authorization headers)
                 .requestMatchers("/api/notifications/**").permitAll()
                 .anyRequest().authenticated()

@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final com.ethiorental.backend.payment.scheduler.RentReminderScheduler rentReminderScheduler;
 
     /**
      * Initialize advance rent payment with Chapa
@@ -77,5 +79,17 @@ public class PaymentController {
         log.info("Chapa Webhook triggered with signature header: {}", signatureHeader != null ? "PRESENT" : "ABSENT");
         paymentService.handleWebhook(payload, signatureHeader);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Manually trigger rent due date check and reminder dispatch
+     */
+    @PostMapping("/trigger-reminders")
+    public ResponseEntity<Map<String, Object>> triggerReminders() {
+        rentReminderScheduler.checkRentDueDates();
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Rent payment due date check executed successfully"
+        ));
     }
 }

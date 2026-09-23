@@ -87,6 +87,15 @@ public class AgreementResponse {
     private LocalDateTime supervisorApprovedAt;
     private String supervisorEmail;
 
+    // Payment state tracking
+    private Integer totalMonthsPaid;
+    private LocalDate paidThroughDate;
+    private LocalDate nextPaymentDueDate;
+
+    // Cancellation
+    private LocalDateTime cancellationRequestedAt;
+    private Boolean cancellationRequestedByLandlord;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -141,12 +141,32 @@ public class Agreement {
     @Column
     private Boolean cancellationRequestedByLandlord = false;
 
+    @Builder.Default
+    @Column
+    private Integer totalMonthsPaid = 0;
+
+    @Column
+    private LocalDate paidThroughDate;
+
+    @Column
+    private LocalDate nextPaymentDueDate;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         if (this.status == null) this.status = AgreementStatus.ACTIVE;
-        if (this.monthlyPaymentDueDay == null) this.monthlyPaymentDueDay = 5;
+        if (this.totalMonthsPaid == null) this.totalMonthsPaid = 0;
+        if (this.startDate != null) {
+            if (this.monthlyPaymentDueDay == null) {
+                this.monthlyPaymentDueDay = this.startDate.getDayOfMonth();
+            }
+            if (this.nextPaymentDueDate == null) {
+                this.nextPaymentDueDate = this.startDate.toLocalDate();
+            }
+        } else if (this.monthlyPaymentDueDay == null) {
+            this.monthlyPaymentDueDay = 5;
+        }
         if (this.agreementNumber == null) {
             this.agreementNumber = "AGR" + System.currentTimeMillis() + (int)(Math.random() * 1000);
         }

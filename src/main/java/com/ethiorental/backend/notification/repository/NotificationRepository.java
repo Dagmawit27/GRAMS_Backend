@@ -29,5 +29,16 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Modifying
     @Query("UPDATE Notification n SET n.read = true WHERE n.recipientUserId = :userId AND n.read = false")
     int markAllAsRead(@Param("userId") String userId);
+
+    @Query("SELECT COUNT(n) > 0 FROM Notification n " +
+           "WHERE n.recipientUserId = :recipient " +
+           "AND n.type = :type " +
+           "AND n.entityId = :entityId " +
+           "AND n.createdAt >= :since")
+    boolean existsByRecipientAndTypeAndEntityIdSince(
+            @Param("recipient") String recipient,
+            @Param("type") com.ethiorental.backend.shared.notification.NotificationType type,
+            @Param("entityId") String entityId,
+            @Param("since") java.time.Instant since);
 }
 

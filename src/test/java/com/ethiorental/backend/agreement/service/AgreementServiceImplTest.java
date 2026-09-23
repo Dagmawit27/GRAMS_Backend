@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -139,6 +140,11 @@ class AgreementServiceImplTest {
         assertThat(savedEntity.getTenant().getId()).isEqualTo(tenantId);
         assertThat(savedEntity.getLandlord().getId()).isEqualTo(landlordId);
         assertThat(savedEntity.getStatus()).isEqualTo(AgreementStatus.ACTIVE);
+        assertThat(savedEntity.getTotalMonthsPaid()).isEqualTo(0);
+        assertThat(savedEntity.getMonthlyPaymentDueDay()).isEqualTo(LocalDateTime.now().getDayOfMonth());
+        assertThat(savedEntity.getNextPaymentDueDate()).isEqualTo(LocalDate.now());
+        assertThat(response.getTotalMonthsPaid()).isEqualTo(0);
+        assertThat(response.getNextPaymentDueDate()).isEqualTo(LocalDate.now());
 
         verify(propertyRepository).save(property);
         assertThat(property.getStatus()).isEqualTo(PropertyStatus.RENTED);
@@ -180,5 +186,43 @@ class AgreementServiceImplTest {
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getAgreementNumber()).isEqualTo("AGR-100");
+    }
+
+    @Test
+    void tenantCancelAgreement_Success() {
+        Citizen tenant = Citizen.builder()
+                .id(UUID.randomUUID())
+                .email("tenant@example.com")
+                .build();
+
+        Property property = Property.builder()
+                .id(UUID.randomUUID())
+                .status(PropertyStatus.RENTED)
+                .build();
+
+        PropertyUnit unit = PropertyUnit.builder()
+                .id(UUID.randomUUID())
+                .status(com.ethiorental.backend.property.enums.UnitStatus.RENTED)
+                .build();
+
+        Agreement agreement = Agreement.builder()
+                .id(UUID.randomUUID())
+                .agreementNumber("AGR-TEST-01")
+                .status(AgreementStatus.ACTIVE)
+                .tenant(tenant)
+                .property(property)
+                .unit(unit)
+                .build();
+
+        when(agreementRepository.findByAgreementNumber("AGR-TEST-01")).thenReturn(Optional.of(agreement));
+
+        agreementService.tenantCancelAgreement("AGR-TEST-01", "tenant@example.com");
+
+        assertThat(agreement.getStatus()).isEqualTo(AgreementStatus.CANCELLED);
+        assertThat(property.getStatus()).isEqualTo(PropertyStatus.LISTED);
+        assertThat(unit.getStatus()).isEqualTo(com.ethiorental.backend.property.enums.UnitStatus.AVAILABLE);
+        verify(agreementRepository).save(agreement);
+        verify(propertyRepository).save(property);
+        verify(propertyUnitRepository).save(unit);
     }
 }
