@@ -82,10 +82,12 @@ public class RentReminderScheduler {
                     a.setTotalMonthsPaid(totalMonths);
                     LocalDate paidThrough = start.plusMonths(totalMonths);
                     a.setPaidThroughDate(paidThrough);
-                    a.setNextPaymentDueDate(paidThrough);
+                    // Next payment is due the day after paid-through date
+                    LocalDate nextDue = paidThrough.plusDays(1);
+                    a.setNextPaymentDueDate(nextDue);
                     agreementRepository.save(a);
-                    log.info("[RentReminder] Reconciled agreement {}: totalMonthsPaid={}, paidThrough={}",
-                            a.getAgreementNumber(), totalMonths, paidThrough);
+                    log.info("[RentReminder] Reconciled agreement {}: totalMonthsPaid={}, paidThrough={}, nextDue={}",
+                            a.getAgreementNumber(), totalMonths, paidThrough, nextDue);
                 } else {
                     a.setTotalMonthsPaid(0);
                     a.setNextPaymentDueDate(start);
@@ -96,7 +98,9 @@ public class RentReminderScheduler {
                     ? a.getPaidThroughDate()
                     : start.plusMonths(a.getTotalMonthsPaid());
                 a.setPaidThroughDate(paidThrough);
-                a.setNextPaymentDueDate(paidThrough);
+                // Next payment is due the day after paid-through date
+                LocalDate nextDue = paidThrough.plusDays(1);
+                a.setNextPaymentDueDate(nextDue);
                 agreementRepository.save(a);
             }
         }

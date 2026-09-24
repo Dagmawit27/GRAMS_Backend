@@ -21,6 +21,9 @@ public interface AgreementRepository extends JpaRepository<Agreement, UUID> {
     @Query("SELECT a FROM Agreement a WHERE a.landlord.email = :email ORDER BY a.createdAt DESC")
     List<Agreement> findByLandlordEmail(@Param("email") String email);
 
+    @Query("SELECT a FROM Agreement a WHERE a.landlord.email = :email AND a.status = :status ORDER BY a.createdAt DESC")
+    List<Agreement> findByLandlordEmailAndStatus(@Param("email") String email, @Param("status") AgreementStatus status);
+
     @Query("SELECT a FROM Agreement a WHERE a.tenant.email = :email ORDER BY a.createdAt DESC")
     List<Agreement> findByTenantEmail(@Param("email") String email);
 

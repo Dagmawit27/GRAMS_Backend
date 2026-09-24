@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import com.ethiorental.backend.tax.service.TaxService;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +31,7 @@ public class AgreementServiceImpl implements AgreementService {
     private final AgreementRepository agreementRepository;
     private final PropertyRepository propertyRepository;
     private final PropertyUnitRepository propertyUnitRepository;
+    private final TaxService taxService;
 
     @Override
     @Transactional
@@ -132,6 +134,14 @@ public class AgreementServiceImpl implements AgreementService {
         }
 
         log.info("Successfully created Agreement {} for requestCode {}", saved.getAgreementNumber(), saved.getRequestCode());
+
+        // Synchronize LandlordTax record for all active agreements of this landlord
+        try {
+            taxService.onAgreementActivated(saved);
+        } catch (Exception ex) {
+            log.warn("Failed to sync tax ledger for active agreement {}: {}", saved.getAgreementNumber(), ex.getMessage());
+        }
+
         return toResponse(saved);
     }
 
@@ -292,6 +302,11 @@ public class AgreementServiceImpl implements AgreementService {
         }
         agreementRepository.save(agreement);
         log.info("Agreement {} expired. Property released.", agreement.getAgreementNumber());
+        try {
+            taxService.onAgreementActivated(agreement);
+        } catch (Exception ex) {
+            log.warn("Failed to sync tax ledger after expiring agreement: {}", ex.getMessage());
+        }
     }
 
     @Override
@@ -311,6 +326,11 @@ public class AgreementServiceImpl implements AgreementService {
         agreement.setLeaseDurationMonths((agreement.getLeaseDurationMonths() != null ? agreement.getLeaseDurationMonths() : 0) + 24);
         agreementRepository.save(agreement);
         log.info("Agreement {} renewed until {}. Requested by {}", agreementNumber, newEndDate, userEmail);
+        try {
+            taxService.onAgreementActivated(agreement);
+        } catch (Exception ex) {
+            log.warn("Failed to sync tax ledger after renewing agreement: {}", ex.getMessage());
+        }
     }
 
     @Override
@@ -365,6 +385,11 @@ public class AgreementServiceImpl implements AgreementService {
         }
         agreementRepository.save(agreement);
         log.info("Agreement {} cancelled. Property released.", agreementNumber);
+        try {
+            taxService.onAgreementActivated(agreement);
+        } catch (Exception ex) {
+            log.warn("Failed to sync tax ledger after cancelling agreement: {}", ex.getMessage());
+        }
     }
 
     @Override
@@ -394,5 +419,10 @@ public class AgreementServiceImpl implements AgreementService {
         }
         agreementRepository.save(agreement);
         log.info("Tenant {} cancelled agreement {}. Property released.", tenantEmail, agreementNumber);
+        try {
+            taxService.onAgreementActivated(agreement);
+        } catch (Exception ex) {
+            log.warn("Failed to sync tax ledger after tenant cancelling agreement: {}", ex.getMessage());
+        }
     }
 }

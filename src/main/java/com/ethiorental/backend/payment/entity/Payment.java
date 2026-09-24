@@ -100,6 +100,9 @@ public class Payment {
     @Column(name = "payment_date")
     private LocalDateTime paymentDate;
 
+    @Column(name = "period_covered_date")
+    private LocalDateTime periodCoveredDate;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

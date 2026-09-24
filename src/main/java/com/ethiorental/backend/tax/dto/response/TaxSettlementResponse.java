@@ -1,17 +1,15 @@
-package com.ethiorental.backend.payment.dto.response;
+package com.ethiorental.backend.tax.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class TaxSettlementResponse {
     private String status;
     private String clearanceCertificateNumber;

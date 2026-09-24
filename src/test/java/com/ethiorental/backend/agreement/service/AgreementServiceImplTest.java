@@ -42,11 +42,14 @@ class AgreementServiceImplTest {
     @Mock
     private PropertyUnitRepository propertyUnitRepository;
 
+    @Mock
+    private com.ethiorental.backend.tax.service.TaxService taxService;
+
     private AgreementServiceImpl agreementService;
 
     @BeforeEach
     void setUp() {
-        agreementService = new AgreementServiceImpl(agreementRepository, propertyRepository, propertyUnitRepository);
+        agreementService = new AgreementServiceImpl(agreementRepository, propertyRepository, propertyUnitRepository, taxService);
     }
 
     @Test

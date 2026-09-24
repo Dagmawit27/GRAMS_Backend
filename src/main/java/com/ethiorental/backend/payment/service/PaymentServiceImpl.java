@@ -22,6 +22,7 @@ import com.ethiorental.backend.payment.enums.PaymentStatus;
 import com.ethiorental.backend.payment.repository.PaymentRepository;
 import com.ethiorental.backend.shared.notification.NotificationChannel;
 import com.ethiorental.backend.shared.notification.NotificationType;
+import com.ethiorental.backend.tax.service.TaxService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -255,17 +256,23 @@ public class PaymentServiceImpl implements PaymentService {
                     agr.setMonthlyPaymentDueDay(start.getDayOfMonth());
                 }
 
+                int monthsPaid;
                 if (agr.getTotalMonthsPaid() == null || agr.getTotalMonthsPaid() < advMonths) {
                     // Initial Advance Rent payment completion
+                    monthsPaid = advMonths;
                     agr.setTotalMonthsPaid(advMonths);
                     LocalDate paidThrough = start.plusMonths(advMonths);
                     agr.setPaidThroughDate(paidThrough);
-                    agr.setNextPaymentDueDate(paidThrough);
-                    log.info("Advance rent ({} months) marked completed for agreement {}. Paid through: {}, Next due: {}",
-                            advMonths, agr.getAgreementNumber(), paidThrough, paidThrough);
+                    // Next payment is due the day after paid-through date
+                    LocalDate nextDue = paidThrough.plusDays(1);
+                    agr.setNextPaymentDueDate(nextDue);
+                    // Period covered starts from agreement start date
+                    payment.setPeriodCoveredDate(start.atStartOfDay());
+                    log.info("Advance rent ({} months) marked completed for agreement {}. Paid through: {}, Next due: {}, Period covered from: {}",
+                            advMonths, agr.getAgreementNumber(), paidThrough, nextDue, start);
                 } else {
                     // Recurring monthly rent payment
-                    int monthsPaid = 1;
+                    monthsPaid = 1;
                     if (agr.getMonthlyRent() != null && agr.getMonthlyRent().compareTo(BigDecimal.ZERO) > 0 && payment.getAmount() != null) {
                         try {
                             BigDecimal divided = payment.getAmount().divideToIntegralValue(agr.getMonthlyRent());
@@ -274,6 +281,12 @@ public class PaymentServiceImpl implements PaymentService {
                             }
                         } catch (Exception ignored) {}
                     }
+                    // Period covered is the nextPaymentDueDate (the due date for this payment)
+                    LocalDate periodCovered = agr.getNextPaymentDueDate() != null
+                            ? agr.getNextPaymentDueDate()
+                            : start.plusMonths(agr.getTotalMonthsPaid());
+                    payment.setPeriodCoveredDate(periodCovered.atStartOfDay());
+
                     int newTotalMonths = agr.getTotalMonthsPaid() + monthsPaid;
                     agr.setTotalMonthsPaid(newTotalMonths);
                     LocalDate baseDate = agr.getPaidThroughDate() != null
@@ -281,12 +294,17 @@ public class PaymentServiceImpl implements PaymentService {
                             : start.plusMonths(agr.getTotalMonthsPaid());
                     LocalDate newPaidThrough = baseDate.plusMonths(monthsPaid);
                     agr.setPaidThroughDate(newPaidThrough);
-                    agr.setNextPaymentDueDate(newPaidThrough);
-                    log.info("Recurring rent (+{} month(s)) marked completed for agreement {}. Total months paid: {}, Paid through: {}, Next due: {}",
-                            monthsPaid, agr.getAgreementNumber(), newTotalMonths, newPaidThrough, newPaidThrough);
+                    // Next payment is due the day after paid-through date
+                    LocalDate nextDue = newPaidThrough.plusDays(1);
+                    agr.setNextPaymentDueDate(nextDue);
+                    log.info("Recurring rent (+{} month(s)) marked completed for agreement {}. Total months paid: {}, Paid through: {}, Next due: {}, Period covered: {}",
+                            monthsPaid, agr.getAgreementNumber(), newTotalMonths, newPaidThrough, nextDue, periodCovered);
                 }
 
                 agreementRepository.save(agr);
+
+                // Update LandlordTax record in tax module
+                taxService.onPaymentCompleted(agr, payment, monthsPaid);
             }
 
             paymentRepository.save(payment);

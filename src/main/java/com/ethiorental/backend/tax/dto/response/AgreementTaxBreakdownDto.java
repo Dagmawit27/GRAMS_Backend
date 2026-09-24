@@ -1,17 +1,15 @@
-package com.ethiorental.backend.payment.dto.response;
+package com.ethiorental.backend.tax.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class AgreementTaxBreakdownDto {
     private UUID agreementId;
     private String agreementNumber;
@@ -21,7 +19,7 @@ public class AgreementTaxBreakdownDto {
     private String tenantName;
     private String tenantTin;
     private BigDecimal monthlyRent;
-    private int monthsCounted;
+    private Integer monthsCounted;
     private BigDecimal grossIncome;
     private BigDecimal accruedTaxContribution;
     private String status;

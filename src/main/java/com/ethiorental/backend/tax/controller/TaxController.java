@@ -1,9 +1,11 @@
-package com.ethiorental.backend.payment.controller;
+package com.ethiorental.backend.tax.controller;
 
-import com.ethiorental.backend.payment.dto.request.TaxSettlementRequest;
-import com.ethiorental.backend.payment.dto.response.TaxSettlementResponse;
-import com.ethiorental.backend.payment.dto.response.TaxSummaryResponse;
-import com.ethiorental.backend.payment.service.TaxService;
+import com.ethiorental.backend.tax.dto.request.TaxSettlementRequest;
+import com.ethiorental.backend.tax.dto.response.TaxSettlementResponse;
+import com.ethiorental.backend.tax.dto.response.TaxSummaryResponse;
+import com.ethiorental.backend.tax.entity.LandlordTax;
+import com.ethiorental.backend.tax.repository.LandlordTaxRepository;
+import com.ethiorental.backend.tax.service.TaxService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,7 @@ import java.util.Map;
 public class TaxController {
 
     private final TaxService taxService;
+    private final LandlordTaxRepository landlordTaxRepository;
 
     @GetMapping("/summary")
     public ResponseEntity<TaxSummaryResponse> getTaxSummary(@AuthenticationPrincipal UserDetails userDetails) {
@@ -44,6 +47,14 @@ public class TaxController {
     @GetMapping("/proclamation")
     public ResponseEntity<Map<String, String>> getLegalProclamation() {
         return ResponseEntity.ok(Map.of("notice", TaxService.LEGAL_PROCLAMATION_NOTICE));
+    }
+
+    @GetMapping("/ledger")
+    public ResponseEntity<LandlordTax> getTaxLedger(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = getUserId(userDetails);
+        return landlordTaxRepository.findByLandlordEmailAndFiscalYear(email, TaxService.CURRENT_FISCAL_YEAR)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     private String getUserId(UserDetails userDetails) {
