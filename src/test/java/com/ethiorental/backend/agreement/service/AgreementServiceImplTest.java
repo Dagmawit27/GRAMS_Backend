@@ -129,7 +129,7 @@ class AgreementServiceImplTest {
         assertThat(response).isNotNull();
         assertThat(response.getRequestCode()).isEqualTo("LR-123456");
         assertThat(response.getMonthlyRent()).isEqualByComparingTo("15000");
-        assertThat(response.getSecurityDeposit()).isEqualByComparingTo("30000");
+        assertThat(response.getAdvancePaymentMonths()).isEqualTo(2);
         assertThat(response.getStatus()).isEqualTo("ACTIVE");
         assertThat(response.getTenantEmail()).isEqualTo("abebe@example.com");
         assertThat(response.getLandlordEmail()).isEqualTo("almaz@example.com");

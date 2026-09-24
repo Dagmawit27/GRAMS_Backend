@@ -107,7 +107,7 @@ public class PaymentServiceImpl implements PaymentService {
         // Calculate amount for advance payment
         int advanceMonths = agreement.getAdvancePaymentMonths() != null && agreement.getAdvancePaymentMonths() > 0
                 ? agreement.getAdvancePaymentMonths()
-                : 2;
+                : 1;
 
         BigDecimal totalAmount = request.getAmount() != null && request.getAmount().compareTo(BigDecimal.ZERO) > 0
                 ? request.getAmount()
@@ -247,7 +247,7 @@ public class PaymentServiceImpl implements PaymentService {
                 agr.setStatus(AgreementStatus.ACTIVE);
 
                 int advMonths = agr.getAdvancePaymentMonths() != null && agr.getAdvancePaymentMonths() > 0
-                        ? agr.getAdvancePaymentMonths() : 2;
+                        ? agr.getAdvancePaymentMonths() : 1;
                 LocalDate start = agr.getStartDate() != null
                         ? agr.getStartDate().toLocalDate()
                         : (agr.getContractDate() != null ? agr.getContractDate() : LocalDate.now());

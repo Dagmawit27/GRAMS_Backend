@@ -67,7 +67,7 @@ public class PropertyMapper {
                 p.getSpecificLandmark(),
                 p.getCadastralParcelId(),
                 p.getTitleDeedNumber(),
-                p.getSecurityDepositMonths(),
+                p.getAdvanceRent(),
                 p.getMinLeasePeriod(),
                 p.getAvailableFrom(),
                 p.getStatus(),

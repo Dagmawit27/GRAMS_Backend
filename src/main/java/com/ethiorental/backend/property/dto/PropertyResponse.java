@@ -25,7 +25,7 @@ public record PropertyResponse(
         String specificLandmark,
         String cadastralParcelId,
         String titleDeedNumber,
-        Integer securityDepositMonths,
+        Integer advanceRent,
         String minLeasePeriod,
         String availableFrom,
         PropertyStatus status,

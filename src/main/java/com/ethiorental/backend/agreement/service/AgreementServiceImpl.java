@@ -47,7 +47,6 @@ public class AgreementServiceImpl implements AgreementService {
 
         int durationMonths = leaseRequest.getLeaseDurationMonths() != null ? leaseRequest.getLeaseDurationMonths() : 12;
         BigDecimal monthlyRent = leaseRequest.getProposedRent() != null ? leaseRequest.getProposedRent() : BigDecimal.ZERO;
-        BigDecimal securityDeposit = monthlyRent.multiply(BigDecimal.valueOf(2));
 
         String agreementNumber = "AGR" + System.currentTimeMillis() + (int)(Math.random() * 1000);
         LocalDateTime now = LocalDateTime.now();
@@ -62,8 +61,7 @@ public class AgreementServiceImpl implements AgreementService {
                 .tenant(leaseRequest.getApplicant())
                 .landlord(leaseRequest.getLandlord())
                 .monthlyRent(monthlyRent)
-                .securityDeposit(securityDeposit)
-                .advancePaymentMonths(2)
+                .advancePaymentMonths(leaseRequest.getProperty().getAdvanceRent())
                 .leaseDurationMonths(durationMonths)
                 .contractDate(now.toLocalDate())
                 .startDate(now)
@@ -249,7 +247,6 @@ public class AgreementServiceImpl implements AgreementService {
                 .landlordTinNumber(a.getLandlord() != null ? a.getLandlord().getTinNumber() : "")
                 // Terms
                 .monthlyRent(a.getMonthlyRent())
-                .securityDeposit(a.getSecurityDeposit())
                 .advancePaymentMonths(a.getAdvancePaymentMonths())
                 .leaseDurationMonths(a.getLeaseDurationMonths())
                 .contractDate(a.getContractDate())

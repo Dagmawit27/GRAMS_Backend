@@ -94,7 +94,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .specificLandmark(request.specificLandmark())
                 .cadastralParcelId(request.cadastralParcelId())
                 .titleDeedNumber(request.titleDeedNumber())
-                .securityDepositMonths(request.securityDepositMonths())
+                .advanceRent(request.advanceRent())
                 .minLeasePeriod(request.minLeasePeriod())
                 .availableFrom(request.availableFrom())
                 .status(PropertyStatus.PENDING)
@@ -502,7 +502,7 @@ public class PropertyServiceImpl implements PropertyService {
         property.setSpecificLandmark(request.specificLandmark());
         property.setCadastralParcelId(request.cadastralParcelId());
         property.setTitleDeedNumber(request.titleDeedNumber());
-        property.setSecurityDepositMonths(request.securityDepositMonths());
+        property.setAdvanceRent(request.advanceRent());
         property.setMinLeasePeriod(request.minLeasePeriod());
         property.setAvailableFrom(request.availableFrom());
 

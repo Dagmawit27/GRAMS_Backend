@@ -22,7 +22,7 @@ public record PropertyRequest(
         String specificLandmark,
         String cadastralParcelId,
         String titleDeedNumber,
-        Integer securityDepositMonths,
+        Integer advanceRent,
         String minLeasePeriod,
         String availableFrom,
         List<PropertyUnitRequest> units

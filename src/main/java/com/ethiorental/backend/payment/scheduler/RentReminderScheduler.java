@@ -70,7 +70,7 @@ public class RentReminderScheduler {
             }
 
             int advMonths = a.getAdvancePaymentMonths() != null && a.getAdvancePaymentMonths() > 0
-                    ? a.getAdvancePaymentMonths() : 2;
+                    ? a.getAdvancePaymentMonths() : 1;
 
             if (a.getTotalMonthsPaid() == null || a.getTotalMonthsPaid() == 0) {
                 List<com.ethiorental.backend.payment.entity.Payment> payments = paymentRepository.findByAgreementId(a.getId());
@@ -127,7 +127,7 @@ public class RentReminderScheduler {
                 if (agreement.getStatus() != AgreementStatus.ACTIVE) continue;
 
                 int advMonths = agreement.getAdvancePaymentMonths() != null && agreement.getAdvancePaymentMonths() > 0
-                        ? agreement.getAdvancePaymentMonths() : 2;
+                        ? agreement.getAdvancePaymentMonths() : 1;
                 int monthsPaid = agreement.getTotalMonthsPaid() != null ? agreement.getTotalMonthsPaid() : 0;
                 LocalDate nextDueDate = agreement.getNextPaymentDueDate();
 

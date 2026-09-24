@@ -34,7 +34,7 @@ public record LeaseRequestResponse(
         String landlordSubCity,
         String landlordWoreda,
         BigDecimal proposedRent,
-        BigDecimal securityDeposit,
+        Integer advanceRent,
         Integer leaseDurationMonths,
         String startDate,
         String endDate,

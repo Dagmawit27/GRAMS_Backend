@@ -55,9 +55,6 @@ public class Agreement {
     private BigDecimal monthlyRent;
 
     @Column
-    private BigDecimal securityDeposit;
-
-    @Column
     private Integer advancePaymentMonths;
 
     @Column(nullable = false)

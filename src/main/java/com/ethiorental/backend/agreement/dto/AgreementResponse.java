@@ -61,7 +61,6 @@ public class AgreementResponse {
 
     // Contract terms
     private BigDecimal monthlyRent;
-    private BigDecimal securityDeposit;
     private Integer advancePaymentMonths;
     private Integer leaseDurationMonths;
     private LocalDate contractDate;

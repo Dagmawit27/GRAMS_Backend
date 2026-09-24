@@ -302,12 +302,12 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
         List<String> propertyImages = property.getImages() != null 
             ? property.getImages().stream().map(img -> storageService.resolveImageUrl(img.getImageUrl())).toList()
             : List.of();
-        
+
         String propertyImage = propertyImages.isEmpty() ? "" : propertyImages.get(0);
-        
-        // Calculate security deposit (2 months rent)
-        java.math.BigDecimal securityDeposit = leaseRequest.getProposedRent().multiply(java.math.BigDecimal.valueOf(2));
-        
+
+        // Get advance rent from property
+        Integer advanceRent = property.getAdvanceRent() != null ? property.getAdvanceRent() : 1;
+
         // Calculate start and end dates
         String startDate = leaseRequest.getCreatedAt().toLocalDate().toString();
         String endDate = leaseRequest.getCreatedAt().plusMonths(leaseRequest.getLeaseDurationMonths()).toLocalDate().toString();
@@ -344,7 +344,7 @@ public class LeaseRequestServiceImpl implements LeaseRequestService {
                 leaseRequest.getLandlord().getSubCity() != null ? leaseRequest.getLandlord().getSubCity() : "",
                 leaseRequest.getLandlord().getWoreda() != null ? leaseRequest.getLandlord().getWoreda() : "",
                 leaseRequest.getProposedRent(),
-                securityDeposit,
+                advanceRent,
                 leaseRequest.getLeaseDurationMonths(),
                 startDate,
                 endDate,

@@ -65,7 +65,7 @@ public class Property {
     @Column(unique = true)
     private String titleDeedNumber;
 
-    private Integer securityDepositMonths;
+    private Integer advanceRent;
 
     private String minLeasePeriod;
 
