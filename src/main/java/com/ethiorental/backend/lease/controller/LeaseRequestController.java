@@ -28,10 +28,10 @@ public class LeaseRequestController {
     private final GovernmentEmployeeRepository governmentEmployeeRepository;
 
     /**
-     * Submit a new lease application for a property or unit.
+     * Submit a new lease application for a property or unit - tenant or dual role.
      */
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('TENANT','BOTH')")
     public ResponseEntity<LeaseRequestResponse> submitLeaseRequest(
             @RequestBody @Valid LeaseRequestRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -41,10 +41,10 @@ public class LeaseRequestController {
     }
 
     /**
-     * Get all lease requests for the authenticated applicant.
+     * Get all lease requests for the authenticated applicant - tenant or dual role.
      */
     @GetMapping("/my")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('TENANT','BOTH')")
     public ResponseEntity<List<LeaseRequestResponse>> getMyLeaseRequests(
             @AuthenticationPrincipal UserDetails userDetails) {
         
@@ -52,10 +52,10 @@ public class LeaseRequestController {
     }
 
     /**
-     * Get all lease requests for a landlord's properties.
+     * Get all lease requests for a landlord's properties - landlord or dual role.
      */
     @GetMapping("/landlord")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<List<LeaseRequestResponse>> getLandlordLeaseRequests(
             @AuthenticationPrincipal UserDetails userDetails) {
         
@@ -75,7 +75,7 @@ public class LeaseRequestController {
      * Update lease request status (approve/reject) - landlord only.
      */
     @PatchMapping("/{requestCode}/status")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<LeaseRequestResponse> updateLeaseRequestStatus(
             @PathVariable String requestCode,
             @RequestBody @Valid LeaseStatusUpdateRequest request,
@@ -88,7 +88,7 @@ public class LeaseRequestController {
      * Cancel a lease request - applicant only.
      */
     @PatchMapping("/{requestCode}/cancel")
-    @PreAuthorize("hasAnyRole('TENANT','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('TENANT','BOTH')")
     public ResponseEntity<Void> cancelLeaseRequest(
             @PathVariable String requestCode,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -101,7 +101,7 @@ public class LeaseRequestController {
      * Delete a cancelled lease request - applicant only.
      */
     @DeleteMapping("/{requestCode}")
-    @PreAuthorize("hasAnyRole('TENANT','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('TENANT','BOTH')")
     public ResponseEntity<Void> deleteLeaseRequest(
             @PathVariable String requestCode,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -114,7 +114,7 @@ public class LeaseRequestController {
      * Get pending lease requests for a specific property.
      */
     @GetMapping("/property/{propertyId}/pending")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<List<LeaseRequestResponse>> getPendingRequestsForProperty(
             @PathVariable UUID propertyId,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -126,7 +126,7 @@ public class LeaseRequestController {
      * Get pending lease requests for a specific unit.
      */
     @GetMapping("/unit/{unitId}/pending")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<List<LeaseRequestResponse>> getPendingRequestsForUnit(
             @PathVariable UUID unitId,
             @AuthenticationPrincipal UserDetails userDetails) {

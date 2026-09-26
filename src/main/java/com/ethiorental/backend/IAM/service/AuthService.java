@@ -84,12 +84,20 @@ public class AuthService {
                     .build();
             citizenCredentialRepository.save(credential);
 
-            // Assign role: LANDLORD, TENANT, or default CITIZEN
-            String roleName = resolveRolePreference(req.getRolePreference());
-            roleRepository.findByRoleName(roleName).ifPresent(role -> {
-                citizenRoleRepository.save(CitizenRole.builder()
-                        .citizen(citizen).role(role).build());
-            });
+            // Assign role: LANDLORD, TENANT, BOTH, or default CITIZEN
+            String pref = req.getRolePreference() != null ? req.getRolePreference().trim().toUpperCase() : "CITIZEN";
+            if ("BOTH".equals(pref)) {
+                roleRepository.findByRoleName("LANDLORD").ifPresent(role ->
+                        citizenRoleRepository.save(CitizenRole.builder().citizen(citizen).role(role).build()));
+                roleRepository.findByRoleName("TENANT").ifPresent(role ->
+                        citizenRoleRepository.save(CitizenRole.builder().citizen(citizen).role(role).build()));
+                roleRepository.findByRoleName("BOTH").ifPresent(role ->
+                        citizenRoleRepository.save(CitizenRole.builder().citizen(citizen).role(role).build()));
+            } else {
+                String roleName = resolveRolePreference(pref);
+                roleRepository.findByRoleName(roleName).ifPresent(role ->
+                        citizenRoleRepository.save(CitizenRole.builder().citizen(citizen).role(role).build()));
+            }
 
             UserDetails userDetails = userDetailsService.loadUserByUsername(req.getEmail());
             List<String> roles = userDetails.getAuthorities().stream()
@@ -423,6 +431,7 @@ public class AuthService {
         return switch (pref.toUpperCase()) {
             case "LANDLORD" -> "LANDLORD";
             case "TENANT" -> "TENANT";
+            case "BOTH" -> "BOTH";
             default -> "CITIZEN";
         };
     }

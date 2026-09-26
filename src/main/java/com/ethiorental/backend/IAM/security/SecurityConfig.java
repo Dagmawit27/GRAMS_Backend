@@ -54,7 +54,10 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
-                "http://127.0.0.1:*"
+                "http://127.0.0.1:*",
+                "http://192.168.*:*",
+                "http://10.*:*",
+                "http://172.*:*"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
@@ -89,10 +92,19 @@ public class SecurityConfig {
                         "TAX_OFFICER", "SYSTEM_ADMINISTRATOR", "AUDITOR")
                 // Authenticated users profile
                 .requestMatchers("/api/v1/users/**").authenticated()
-                // Properties — /my endpoint requires auth, other GETs are public for LISTED, everything else requires auth (method security handles roles)
-                .requestMatchers(HttpMethod.GET, "/api/v1/properties/my").authenticated()
+                // Properties — /my endpoint requires LANDLORD or BOTH, other GETs are public for LISTED, everything else requires auth
+                .requestMatchers(HttpMethod.GET, "/api/v1/properties/my").hasAnyRole("LANDLORD", "BOTH")
                 .requestMatchers(HttpMethod.GET, "/api/v1/properties/**").permitAll()
                 .requestMatchers("/api/v1/properties/**").authenticated()
+                // Lease requests — applicant (tenant) vs landlord
+                .requestMatchers(HttpMethod.GET, "/api/v1/lease-requests/my").hasAnyRole("TENANT", "BOTH")
+                .requestMatchers(HttpMethod.GET, "/api/v1/lease-requests/landlord").hasAnyRole("LANDLORD", "BOTH")
+                // Tax — landlord only
+                .requestMatchers("/api/v1/tax/**").hasAnyRole("LANDLORD", "BOTH", "TAX_OFFICER", "SYSTEM_ADMINISTRATOR")
+                // Agreements — tenant vs landlord
+                .requestMatchers(HttpMethod.GET, "/api/v1/agreements/tenant/active").hasRole("TENANT")
+                .requestMatchers(HttpMethod.GET, "/api/v1/agreements/landlord").hasAnyRole("LANDLORD", "BOTH", "ADMIN", "SYSTEM_ADMINISTRATOR")
+                .requestMatchers(HttpMethod.GET, "/api/v1/agreements/tenant").hasAnyRole("TENANT", "BOTH", "ADMIN", "SYSTEM_ADMINISTRATOR")
                 // Complaints — citizens submit/view own; officers view all (method security enforces roles)
                 .requestMatchers(HttpMethod.POST, "/api/v1/complaints").hasRole("CITIZEN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/complaints/my").hasRole("CITIZEN")

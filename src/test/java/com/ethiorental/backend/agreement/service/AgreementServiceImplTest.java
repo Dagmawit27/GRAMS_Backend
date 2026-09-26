@@ -92,6 +92,7 @@ class AgreementServiceImplTest {
                 .title("Luxury Bole Apartment")
                 .propertyType("Apartment")
                 .address(address)
+                .advanceRent(2)
                 .status(PropertyStatus.LISTED)
                 .build();
 

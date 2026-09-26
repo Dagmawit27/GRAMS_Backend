@@ -29,7 +29,7 @@ public class PropertyController {
      * Accepts multipart/form-data with JSON part + file parts.
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<PropertyResponse> registerProperty(
             @RequestPart("property") @Valid PropertyRequest request,
             @RequestParam(value = "images", required = false) List<MultipartFile> images,
@@ -45,7 +45,7 @@ public class PropertyController {
      * Get all properties belonging to the authenticated landlord.
      */
     @GetMapping("/my")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<List<PropertyResponse>> getMyProperties(
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(propertyService.getMyProperties(userDetails.getUsername()));
@@ -120,7 +120,7 @@ public class PropertyController {
      * Delete a property — only property owner (LANDLORD) and only if status is PENDING.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<Void> deleteProperty(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -132,7 +132,7 @@ public class PropertyController {
      * Update a property — only property owner (LANDLORD) and only if status is PENDING.
      */
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('LANDLORD','CITIZEN','BOTH')")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<PropertyResponse> updateProperty(
             @PathVariable UUID id,
             @RequestPart("property") @Valid PropertyRequest request,

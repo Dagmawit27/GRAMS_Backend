@@ -61,7 +61,7 @@ public class AgreementServiceImpl implements AgreementService {
                 .tenant(leaseRequest.getApplicant())
                 .landlord(leaseRequest.getLandlord())
                 .monthlyRent(monthlyRent)
-                .advancePaymentMonths(leaseRequest.getProperty().getAdvanceRent())
+                .advancePaymentMonths(leaseRequest.getProperty() != null && leaseRequest.getProperty().getAdvanceRent() != null ? leaseRequest.getProperty().getAdvanceRent() : 2)
                 .leaseDurationMonths(durationMonths)
                 .contractDate(now.toLocalDate())
                 .startDate(now)
@@ -161,6 +161,13 @@ public class AgreementServiceImpl implements AgreementService {
     @Transactional(readOnly = true)
     public List<AgreementResponse> getTenantAgreements(String userEmail) {
         List<Agreement> agreements = agreementRepository.findByTenantEmail(userEmail);
+        return agreements.stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AgreementResponse> getTenantActiveAgreements(String userEmail) {
+        List<Agreement> agreements = agreementRepository.findByTenantEmailAndStatus(userEmail, AgreementStatus.ACTIVE);
         return agreements.stream().map(this::toResponse).toList();
     }
 

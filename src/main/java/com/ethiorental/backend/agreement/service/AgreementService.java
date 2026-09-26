@@ -15,6 +15,8 @@ public interface AgreementService {
 
     List<AgreementResponse> getTenantAgreements(String userEmail);
 
+    List<AgreementResponse> getTenantActiveAgreements(String userEmail);
+
     AgreementResponse getAgreementByNumber(String agreementNumber);
 
     AgreementResponse getAgreementByRequestCode(String requestCode);

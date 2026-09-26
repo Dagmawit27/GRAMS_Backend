@@ -33,6 +33,7 @@ public class RoleInitializerService implements CommandLineRunner {
             new String[]{"CITIZEN",                "CITIZEN"},
             new String[]{"LANDLORD",               "CITIZEN"},
             new String[]{"TENANT",                 "CITIZEN"},
+            new String[]{"BOTH",                   "CITIZEN"},
             new String[]{"WOREDA_OFFICER",         "EMPLOYEE"},
             new String[]{"WOREDA_SUPERVISOR",      "EMPLOYEE"},
             new String[]{"SUB_CITY_ADMINISTRATOR", "EMPLOYEE"},
@@ -229,6 +230,35 @@ public class RoleInitializerService implements CommandLineRunner {
                     employeeRoleRepository.save(EmployeeRole.builder()
                             .employee(taxOfficer).role(role).build()));
             log.info("Bootstrapped default Tax Officer: {}", taxOfficerEmail);
+        }
+
+        // ── 9. Bootstrap default City Administrator ──────────────────────────
+        String cityAdminEmail = "cityadmin@gmail.com";
+        if (!employeeCredentialRepository.existsByEmail(cityAdminEmail)) {
+            GovernmentEmployee cityAdmin = GovernmentEmployee.builder()
+                    .employeeNumber("EMP-CITY-01")
+                    .office(adminOffice)
+                    .firstName("Worku")
+                    .middleName("Bekele")
+                    .lastName("Mamo")
+                    .gender(Gender.MALE)
+                    .phone("+251911334455")
+                    .email(cityAdminEmail)
+                    .position("Director General, Central Housing Bureau")
+                    .status(EmployeeStatus.ACTIVE)
+                    .build();
+            employeeRepository.save(cityAdmin);
+
+            employeeCredentialRepository.save(EmployeeCredential.builder()
+                    .employee(cityAdmin)
+                    .email(cityAdminEmail)
+                    .passwordHash(passwordEncoder.encode("12345678"))
+                    .build());
+
+            roleRepository.findByRoleName("CITY_ADMINISTRATOR").ifPresent(role ->
+                    employeeRoleRepository.save(EmployeeRole.builder()
+                            .employee(cityAdmin).role(role).build()));
+            log.info("Bootstrapped default City Administrator: {}", cityAdminEmail);
         }
     }
 }

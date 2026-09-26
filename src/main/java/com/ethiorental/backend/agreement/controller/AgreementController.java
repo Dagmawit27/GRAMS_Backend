@@ -31,7 +31,7 @@ public class AgreementController {
      * Get agreements where current authenticated user is the landlord.
      */
     @GetMapping("/landlord")
-    @PreAuthorize("hasAnyRole('CITIZEN','LANDLORD','ADMIN')")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH','ADMIN','SYSTEM_ADMINISTRATOR')")
     public ResponseEntity<List<AgreementResponse>> getLandlordAgreements(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(agreementService.getLandlordAgreements(userDetails.getUsername()));
     }
@@ -40,9 +40,19 @@ public class AgreementController {
      * Get agreements where current authenticated user is the tenant.
      */
     @GetMapping("/tenant")
-    @PreAuthorize("hasAnyRole('CITIZEN','TENANT','ADMIN')")
+    @PreAuthorize("hasAnyRole('TENANT','BOTH','ADMIN','SYSTEM_ADMINISTRATOR')")
     public ResponseEntity<List<AgreementResponse>> getTenantAgreements(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(agreementService.getTenantAgreements(userDetails.getUsername()));
+    }
+
+    /**
+     * Get active agreements specifically for tenant (TENANT role only).
+     * Dual/both accounts use /api/v1/agreements/landlord or /api/v1/agreements/active.
+     */
+    @GetMapping("/tenant/active")
+    @PreAuthorize("hasRole('TENANT')")
+    public ResponseEntity<List<AgreementResponse>> getTenantActiveAgreements(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(agreementService.getTenantActiveAgreements(userDetails.getUsername()));
     }
 
     /**

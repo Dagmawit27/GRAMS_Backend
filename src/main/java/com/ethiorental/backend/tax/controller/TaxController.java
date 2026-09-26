@@ -28,6 +28,7 @@ public class TaxController {
     private final LandlordTaxRepository landlordTaxRepository;
 
     @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<TaxSummaryResponse> getTaxSummary(@AuthenticationPrincipal UserDetails userDetails) {
         String email = getUserId(userDetails);
         TaxSummaryResponse response = taxService.getLandlordTaxSummary(email);
@@ -35,6 +36,7 @@ public class TaxController {
     }
 
     @PostMapping("/settle")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<TaxSettlementResponse> settleAnnualTax(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody TaxSettlementRequest request
@@ -50,6 +52,7 @@ public class TaxController {
     }
 
     @GetMapping("/ledger")
+    @PreAuthorize("hasAnyRole('LANDLORD','BOTH')")
     public ResponseEntity<LandlordTax> getTaxLedger(@AuthenticationPrincipal UserDetails userDetails) {
         String email = getUserId(userDetails);
         return landlordTaxRepository.findByLandlordEmailAndFiscalYear(email, TaxService.CURRENT_FISCAL_YEAR)
